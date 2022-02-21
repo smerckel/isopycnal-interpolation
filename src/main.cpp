@@ -74,7 +74,7 @@ int main(int argc, char** argv)
 
     // The work starts here.
     DataNC data;
-    data.open(input_filename);
+    data.open(input_filename, v);
 
     PycnoNC data_out;
     data_out.open(output_filename);

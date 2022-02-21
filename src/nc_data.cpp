@@ -1,10 +1,11 @@
 #include "nc_data.hpp"
 
 
-int DataNC::open(const std::string filename)
+int DataNC::open(const std::string filename, const std::vector<std::string> v)
 {
     datafile.open(filename, netCDF::NcFile::read);
     set_dimensions();
+    interpolation_variables=v;
 return 0;
 }
 
@@ -31,8 +32,35 @@ std::string & DataNC::get_unit(const std::string var_name)
     return units_dict[var_name]; // no error checking...
 }
 
+int DataNC::get_attributes(const std::string att_name, double & f)
+{
+    std::vector<double> _f{0};
+    get_attributes(att_name, _f);
+    f=_f[0];
+    return 0;
+}
+
+int DataNC::get_attributes(const std::string att_name, std::vector<double> &f)
+{
+    netCDF::NcGroupAtt nc_att = datafile.getAtt(att_name);
+    size_t n = nc_att.getAttLength();
+    f.resize(n);
+    double* pvalues = new double [n];
+    nc_att.getValues(pvalues);
+    for(size_t i=0; i< n; i++)
+        f[i] = pvalues[i];
+    delete [] pvalues;
+    return 0;
+}
+
+
 int DataNC::get_data_const(const std::string var_name)
 {
+    // get attributes for z calculation
+    get_attributes("hc", hc);
+    get_attributes("Cs_r", Cs_r);
+    get_attributes("sc_r", sc_r);
+
     netCDF::NcVar nc_var = datafile.getVar(var_name);
     std::vector<netCDF::NcDim> dims = nc_var.getDims();
     size_t n = 0;
@@ -118,7 +146,6 @@ int DataNC::get_data()
 {
     get_data_const("mask_rho");
     get_data_const("h");
-    get_data_const("s_rho");
     get_data_const("eta_rho");
     get_data_const("xi_rho");
     return 0;
@@ -127,9 +154,15 @@ int DataNC::get_data()
 int DataNC::get_data(const size_t time_level)
 {
     get_data("zeta", time_level);
-    get_data("O2", time_level);
     get_data("temp", time_level);
     get_data("salt", time_level);
+    // Read the user requested variables (except z which we compute)
+    for(auto it = interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
+    {
+        if (*it == "z")
+            continue;
+        get_data(*it, time_level);
+    }
     compute_z_levels();
     return 0;
 }
@@ -166,16 +199,22 @@ int DataNC::compute_z_levels()
     // check if we have all the ingredients ready
     std::vector<double> h = variables_dict["h"];
     std::vector<double> zeta =variables_dict["zeta"];
-    std::vector<double> s_rho = variables_dict["s_rho"];
+    //std::vector<double> s_rho = variables_dict["s_rho"];
     //if ( (h.size()==0) || (zeta.size()==0) )
     //    throw std::runtime_error("No data available for h and/or zeta.");
 
+    // compute depth from s_rho using the matlab code in ../doc as template
     size_t n = nz * ny * nx;
     std::vector<double> z(n);
+    double cff, cff1;
     n=0;
     for (size_t kdx=0; kdx<nz; kdx++)
+    {
+        cff = hc *sc_r[kdx];
+        cff1 = Cs_r[kdx];
         for (size_t idx=0; idx<ny * nx; idx++)
-            z[n++] = s_rho[kdx] * (h[idx] + zeta[idx]);
+            z[n++] = zeta[idx] + (zeta[idx] + h[idx]) * (cff + cff1*h[idx]) / (h[idx] + hc);
+    }
     variables_dict["z"] = z;
     /* z is not a netcdf variable as such, so we cannot find
        the unit from the nc file, so we set it here.

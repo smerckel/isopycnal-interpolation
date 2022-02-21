@@ -20,19 +20,26 @@ private:
     netCDF::NcFile datafile;
     std::map<std::string, std::vector<double>> variables_dict;
     std::map<std::string, std::string> units_dict;
+    std::vector<std::string> interpolation_variables;
 
     size_t nt, nx, ny, nz;
+    // variables that are to be read from NC file to compute z from s_rho
+    double hc;
+    std::vector<double> sc_r, Cs_r;
 
     // private methods
     int compute_z_levels();
     int set_dimensions();
 
+    int get_attributes(const std::string att_name, double &f);
+    int get_attributes(const std::string att_name, std::vector<double> &f);
+
 public:
-    DataNC() : datafile(), variables_dict{}, units_dict{}, nt{0}, nx{0}, ny{0}, nz{0}
+    DataNC() : datafile(), variables_dict{}, units_dict{}, interpolation_variables{}, nt{0}, nx{0}, ny{0}, nz{0}, hc{0}, sc_r{}, Cs_r{}
     {
     }
 
-    int open(const std::string filename);
+    int open(const std::string filename, const std::vector<std::string>);
 
     int get_data_const(const std::string var_name);
     int get_data(const std::string var_name, const size_t time_level);
@@ -55,7 +62,7 @@ class PycnoNC
     //private attributes
     netCDF::NcFile datafile;
 
-    std::vector<double> time, iso_pycnal, eta_rho, xi_rho, O2;
+    std::vector<double> time, iso_pycnal, eta_rho, xi_rho;
 
     size_t nt, nz, ny, nx;
 
@@ -67,7 +74,7 @@ class PycnoNC
 
     public:
 
-    PycnoNC() : datafile(), time{}, iso_pycnal{}, eta_rho{}, xi_rho{}, O2{}, nt{0}, nz{0}, ny{0}, nx{0}, surface_variables{}, dimVector{}
+    PycnoNC() : datafile(), time{}, iso_pycnal{}, eta_rho{}, xi_rho{}, nt{0}, nz{0}, ny{0}, nx{0}, surface_variables{}, dimVector{}
     {
     }
 
