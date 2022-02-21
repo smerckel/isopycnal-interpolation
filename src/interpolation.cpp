@@ -53,7 +53,6 @@ int Interpolation::interpolate_onto_surface(std::map<std::string, std::vector<do
 
     double sigma0=0, sigma1=0; // density values to be computed for k and k+1
 
-    size_t k0=0, k1=0;
     for(size_t j=0; j<ny; ++j)
     {
         for(size_t i=0; i<nx; ++i)
@@ -77,16 +76,17 @@ int Interpolation::interpolate_onto_surface(std::map<std::string, std::vector<do
 
                 if ((i==705) && (j==350) && 0==1)
                 {
-                    std::vector<double> & s_rho = data.get("s_rho");
                     std::cout << "rho: " << rho << std::endl;
                     std::cout << "k: " << k << std::endl;
                     std::cout << "z: " << data.get("z")[s_offset + n] << std::endl;
+                    std::cout << "nz: " << nz << std::endl;
                     for(size_t kk=0; kk<nz;kk++)
                     {
-                        //double rho = Rho(salt[index(k, j, i)], temp[index(k, j, i)], z[index(kk, j, i)]);
+
                         Rho rho_fun;
                         double rho = rho_fun.density(salt[index(kk, j, i)], temp[index(kk, j, i)], -data.get("z")[index(kk, j, i)]);
-                        std::cout << "rho(z): " << data.get("z")[index(kk, j, i)]<< " : " << s_rho[kk] << " : "<< rho << " : " << salt[index(kk, j, i)] << " : " << temp[index(kk, j, i)] << std::endl;
+                        std::cout << "rho(z): " << data.get("z")[index(kk, j, i)]<< " : " << " : "<< rho << " : " << salt[index(kk, j, i)] << " : " << temp[index(kk, j, i)] << " ";
+                        std::cout << kk << ":" << salt[index(kk, j, i)] << " " << temp[index(kk, j, i)] << "  " << data.get("z")[index(kk, j, i)] << std::endl;
                     }
                 }
                 return_value = 0; // at least on valid point found
@@ -94,11 +94,6 @@ int Interpolation::interpolate_onto_surface(std::map<std::string, std::vector<do
             else
                 for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
                         it->second[s_offset + n] = NAN;
-        }
-        if ( (k1=j*100/ny/5) != k0)
-        {
-            std::cout << k1*5 <<  std::endl;
-            k0 = k1;
         }
     }
     return return_value;

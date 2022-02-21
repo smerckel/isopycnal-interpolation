@@ -2,13 +2,12 @@
 #include <iostream>
 #include <gswteos-10.h>
 
-double Rho::density(double S, double T, double P)
+double Rho::density(double sp, double pt, double p)
 {
-    double R;
 
-    //std::cout << "S:" << S  << "T:" << T << "P:" <<P << std::endl;
-    //
-    R = gsw_pot_rho_t_exact(S, T, P, 0.);
-    R = gsw_sigma0(S, T) + 1000.0;
+
+    double sa = gsw_sa_from_sp(sp, p, -31.0, 16.0);
+    double ct = gsw_ct_from_pt(sa, pt);
+    double R = gsw_sigma0(sa, ct) + 1000.0;
     return R;
 }

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.18)
 
 project("pycnocline")
 set(warnings "-Wall -Wextra -Werror")

@@ -81,23 +81,30 @@ int main(int argc, char** argv)
 
     Interpolation interp;
 
+    std::cerr << "Read constant data..." << std::endl;
     data.get_data(); // gets constant fields.
+    std::cerr << "Store units..." << std::endl;
     // make a note of the units of all interpolation variables:
     for(auto it = interpolation_variables.begin(); it != interpolation_variables.end(); ++ it)
         data.set_unit(it->first);
+    std::cerr << "Create dimensions for output file..." << std::endl;
     data_out.create_dimensions(pycnoclines, data.get("eta_rho"), data.get("xi_rho"));
+
+    std::cerr << "Create pycnocline-interpolated variables for output file..." << std::endl;
     for(auto it = interpolation_variables.begin(); it != interpolation_variables.end(); ++ it)
         data_out.create_surface_variable(it->first, data.get_unit(it->first));
 
+    std::cerr << "Start interpolation..." << std::endl;
 
     for (size_t j=0; j<data.get_nt(); j++)
     {
+        std::cerr << "Get data for time level " << j << "..." << std::endl;
         data.get_data(j); // gets the time fields for level 0
 
-        std::vector<double> s, z;
-
+        std::cerr << "Interpolate fields..." << std::endl;
         for (size_t i=0; i<pycnoclines.size(); ++i)
             interp.interpolate_onto_surface(interpolation_variables, data, pycnoclines[i]);
+        std::cerr << "Write fields..." << std::endl;
         //write the fields
         for(auto it = interpolation_variables.begin(); it != interpolation_variables.end(); ++ it)
             data_out.write_parameter(it->second, it->first, j);
