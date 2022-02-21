@@ -64,7 +64,7 @@ int Interpolation::interpolate_onto_surface(std::map<std::string, std::vector<do
                     it->second[s_offset + n] = NAN;
                 continue;
             }
-            interpolation_result = interpolate_at_ji(k, sigma0, sigma1, rho, j, i, salt, temp, data.get("z"));
+            interpolation_result = interpolate_at_ji(k, sigma0, sigma1, rho, j, i, salt, temp);
             if (interpolation_result==0)
             {
                 for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
@@ -84,7 +84,7 @@ int Interpolation::interpolate_onto_surface(std::map<std::string, std::vector<do
                     {
 
                         Rho rho_fun;
-                        double rho = rho_fun.density(salt[index(kk, j, i)], temp[index(kk, j, i)], -data.get("z")[index(kk, j, i)]);
+                        double rho = rho_fun.density(salt[index(kk, j, i)], temp[index(kk, j, i)]);
                         std::cout << "rho(z): " << data.get("z")[index(kk, j, i)]<< " : " << " : "<< rho << " : " << salt[index(kk, j, i)] << " : " << temp[index(kk, j, i)] << " ";
                         std::cout << kk << ":" << salt[index(kk, j, i)] << " " << temp[index(kk, j, i)] << "  " << data.get("z")[index(kk, j, i)] << std::endl;
                     }
@@ -125,14 +125,13 @@ size_t Interpolation::index(const size_t k, const size_t j, const size_t i)
 
 
 int Interpolation::interpolate_at_ji(size_t &k, double & sigma0, double & sigma1, const double rho, const size_t j, const size_t i,
-                                     const std::vector<double> & salt, const std::vector<double> & temp,
-                                     const std::vector<double> & z)
+                                     const std::vector<double> & salt, const std::vector<double> & temp)
 {
     int result=0; // all good, until proven otherwise
 
     size_t index0 = index(k, j, i), index1 = index(k+1, j, i);
-    sigma0 = density_calculations.density_from_depth(salt[index0], temp[index0], -z[index0]);
-    sigma1 = density_calculations.density_from_depth(salt[index1], temp[index1], -z[index1]);
+    sigma0 = density_calculations.density(salt[index0], temp[index0]);
+    sigma1 = density_calculations.density(salt[index1], temp[index1]);
 
     while(1)
     {
@@ -149,7 +148,7 @@ int Interpolation::interpolate_at_ji(size_t &k, double & sigma0, double & sigma1
             index0 = index(k, j, i);
             index1 = index(k+1, j, i);
             sigma1=sigma0; //reuse previously computed densities.
-            sigma0 = density_calculations.density_from_depth(salt[index0], temp[index0], -z[index0]);
+            sigma0 = density_calculations.density(salt[index0], temp[index0]);
         }
         else if (sigma1 > rho)
         {
@@ -162,7 +161,7 @@ int Interpolation::interpolate_at_ji(size_t &k, double & sigma0, double & sigma1
             index0 = index(k, j, i);
             index1 = index(k+1, j, i);
             sigma0=sigma1; //reuse previously computed densities.
-            sigma1 = density_calculations.density_from_depth(salt[index1], temp[index1], -z[index1]);
+            sigma1 = density_calculations.density(salt[index1], temp[index1]);
         }
         else
         {
