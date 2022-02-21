@@ -34,7 +34,7 @@ public:
     {
     };
 
-    int interpolate_onto_surface(std::vector<double> & s_field, std::vector<double> & z_field, DataNC & data, const double rho);
+    int interpolate_onto_surface(std::map<std::string, std::vector<double>> & interpolation_variables, DataNC & data, const double rho);
 
 
 

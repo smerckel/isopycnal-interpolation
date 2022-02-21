@@ -11,7 +11,7 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="data/out.nc data/pycnocline.nc" />
+				<Option parameters="-v O2 -p 1027.1 data/test.nc data/pycnocline.nc" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
@@ -40,6 +40,7 @@
 			<Add option="-lnetcdf" />
 			<Add option="-lgswteos-10" />
 		</Linker>
+		<Unit filename="include/cxxopts.hpp" />
 		<Unit filename="include/interpolation.hpp" />
 		<Unit filename="include/nc_data.hpp" />
 		<Unit filename="include/rho.hpp" />

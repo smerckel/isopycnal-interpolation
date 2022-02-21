@@ -8,6 +8,28 @@ int DataNC::open(const std::string filename)
 return 0;
 }
 
+int DataNC::set_unit(const std::string var_name)
+{
+    netCDF::NcVar nc_var = datafile.getVar(var_name);
+    int return_value=0;
+    try
+    {
+        netCDF::NcVarAtt nc_att = nc_var.getAtt("units");
+        std::string unit;
+        nc_att.getValues(unit);
+        units_dict[var_name] = unit;
+    }
+    catch (netCDF::exceptions::NcException & e)
+    {
+        return_value=-1;
+    }
+    return return_value;
+}
+
+std::string & DataNC::get_unit(const std::string var_name)
+{
+    return units_dict[var_name]; // no error checking...
+}
 
 int DataNC::get_data_const(const std::string var_name)
 {
@@ -30,45 +52,13 @@ int DataNC::get_data_const(const std::string var_name)
 
     double *pvalues = new double [n];
     nc_var.getVar(pvalues);
-    if (var_name=="mask_rho")
-    {
-        mask_rho.resize(n);
-        for(size_t j=0; j<n; j++)
-            mask_rho[j] = pvalues[j];
-    }
-    else if (var_name=="h")
-    {
-        h.resize(n);
-        for(size_t j=0; j<n; j++)
-            h[j] = pvalues[j];
-    }
-    else if (var_name=="s_rho")
-    {
-        s_rho.resize(n);
-        for(size_t j=0; j<n; j++)
-            s_rho[j] = pvalues[j];
-    }
-    else if (var_name=="eta_rho")
-    {
-        eta_rho.resize(n);
-        for(size_t j=0; j<n; j++)
-            eta_rho[j] = pvalues[j];
-    }
-    else if (var_name=="xi_rho")
-    {
-        xi_rho.resize(n);
-        for(size_t j=0; j<n; j++)
-            xi_rho[j] = pvalues[j];
-    }
-    else
-    {
-        throw std::runtime_error("Unhandled variable name.");
-    }
+    std::vector<double> v(n);
+    for(size_t j=0; j<n; j++)
+        v[j] = pvalues[j];
+    variables_dict[var_name] = v;
     delete [] pvalues;
     return 0;
 }
-
- int get_data(std::string var_name, int time_level); int get_data(std::string var_name, int time_level);
 
 int DataNC::get_data(const std::string var_name, const size_t time_level)
 {
@@ -116,34 +106,10 @@ int DataNC::get_data(const std::string var_name, const size_t time_level)
     double *pvalues = new double [n];
 
     nc_var.getVar(startp, countp, pvalues);
-
-    if (var_name=="zeta")
-    {
-        //zeta.resize(n); // Done in set_dimensions.
-        for(size_t j=0; j<n; j++)
-            zeta[j] = pvalues[j];
-    }
-    else if (var_name=="temp")
-    {
-        //temp.resize(n);
-        for(size_t j=0; j<n; j++)
-            temp[j] = pvalues[j];
-    }
-    else if (var_name=="salt")
-    {
-        //salt.resize(n);
-        for(size_t j=0; j<n; j++)
-            salt[j] = pvalues[j];
-    }
-    else if (var_name=="O2")
-    {
-        //O2.resize(n);
-        for(size_t j=0; j<n; j++)
-            O2[j] = pvalues[j];
-    }
-    else
-        throw std::runtime_error("Unhandled variable.");
-
+    std::vector<double> v(n);
+    for(size_t j=0; j<n; j++)
+        v[j] = pvalues[j];
+    variables_dict[var_name] = v;
     delete [] pvalues;
     return 0;
 }
@@ -188,39 +154,9 @@ size_t & DataNC::get_nz()
     return nz;
 }
 
-std::vector<double> & DataNC::get_mask_rho()
+std::vector<double> & DataNC::get(std::string var_name)
 {
-    return mask_rho;
-}
-
-std::vector<double> & DataNC::get_z()
-{
-    return z;
-}
-
-std::vector<double> & DataNC::get_O2()
-{
-    return O2;
-}
-
-std::vector<double> & DataNC::get_salt()
-{
-    return salt;
-}
-
-std::vector<double> & DataNC::get_temp()
-{
-    return temp;
-}
-
-std::vector<double> & DataNC::get_xi_rho()
-{
-    return xi_rho;
-}
-
-std::vector<double> & DataNC::get_eta_rho()
-{
-    return eta_rho;
+    return variables_dict[var_name];
 }
 
 // Private methods:
@@ -228,15 +164,23 @@ std::vector<double> & DataNC::get_eta_rho()
 int DataNC::compute_z_levels()
 {
     // check if we have all the ingredients ready
-    if ( (h.size()==0) || (zeta.size()==0) )
-        throw std::runtime_error("No data available for h and/or zeta.");
+    std::vector<double> h = variables_dict["h"];
+    std::vector<double> zeta =variables_dict["zeta"];
+    std::vector<double> s_rho = variables_dict["s_rho"];
+    //if ( (h.size()==0) || (zeta.size()==0) )
+    //    throw std::runtime_error("No data available for h and/or zeta.");
 
     size_t n = nz * ny * nx;
-    z.resize(n);
+    std::vector<double> z(n);
     n=0;
     for (size_t kdx=0; kdx<nz; kdx++)
         for (size_t idx=0; idx<ny * nx; idx++)
             z[n++] = s_rho[kdx] * (h[idx] + zeta[idx]);
+    variables_dict["z"] = z;
+    /* z is not a netcdf variable as such, so we cannot find
+       the unit from the nc file, so we set it here.
+    */
+    units_dict["z"] = "meter";
     return 0;
 }
 
@@ -252,12 +196,6 @@ int DataNC::set_dimensions()
     nz = dims[1].getSize();
     ny = dims[2].getSize();
     nx = dims[3].getSize();
-    size_t n = nx * ny * nz;
-    // resize the frequently used matrices only once.
-    zeta.resize(n);
-    salt.resize(n);
-    temp.resize(n);
-    O2.resize(n);
     return 0;
 }
 

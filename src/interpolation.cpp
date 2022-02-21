@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "interpolation.hpp"
-
+#include<functional>
 
 /* Interpolation class
  *
@@ -16,32 +16,44 @@
  *
  */
 
+ /*
+    interpolate_onto_surface
 
-int Interpolation::interpolate_onto_surface(std::vector<double> & s_field, std::vector<double> & z_field, DataNC & data, const double rho)
+    Parameters
+    ----------
+    a dictionary (map) of vectors representing the surfaces of the variables to interpolate (output)
+    DataNC: data (input)
+    const double rho (input) the density of the pycnocline
+
+    This methods loops over all variables in the dictionary that are to be interpolated.
+
+ */
+
+int Interpolation::interpolate_onto_surface(std::map<std::string, std::vector<double>> & interpolation_variables, DataNC & data, const double rho)
 {
     int return_value = 1; // no successful interpolation
     int interpolation_result=0;
     size_t n=0,k=0, s_offset=0;
     double s=0;
 
-    // Ensure the surface has the right size
+    // Ensure the surfaces have the right size
 
     nx = data.get_nx();
     ny = data.get_ny();
     nz = data.get_nz();
-    s_offset = s_field.size();
-    s_field.resize(s_offset + ny * nx);
-    z_field.resize(s_offset + ny * nx);
+    for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
+    {
+        s_offset = it->second.size();
+        it->second.resize(s_offset + ny * nx);
+    }
+    // read the prerequisites...
+    std::vector<double> & salt{data.get("salt")};
+    std::vector<double> & temp{data.get("temp")};
+    std::vector<double> & mask_rho{data.get("mask_rho")};
 
-    std::vector<double> salt, temp, z, O2, mask_rho;
-    salt = data.get_salt();
-    temp = data.get_temp();
-    z = data.get_z();
-    O2 = data.get_O2();
-    mask_rho = data.get_mask_rho();
     double sigma0=0, sigma1=0; // density values to be computed for k and k+1
 
-    size_t k0=-1, k1 = -1;
+    size_t k0=0, k1=0;
     for(size_t j=0; j<ny; ++j)
     {
         for(size_t i=0; i<nx; ++i)
@@ -49,22 +61,39 @@ int Interpolation::interpolate_onto_surface(std::vector<double> & s_field, std::
             n = index(j, i); // Gives the index in a 2d field
             if (mask_rho[n] < 0.5) //mask is a double 0. or 1. For some reason 1 means NOT masked...
             {
-                s_field[s_offset + n] = NAN; // Or set it to 0?
+                for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
+                    it->second[s_offset + n] = NAN;
                 continue;
             }
-            interpolation_result = interpolate_at_ji(k, sigma0, sigma1, rho, j, i, salt, temp, z);
+            interpolation_result = interpolate_at_ji(k, sigma0, sigma1, rho, j, i, salt, temp, data.get("z"));
             if (interpolation_result==0)
             {
-                // interpolate for oxygen
-                s = interpolate_linear(rho, sigma0, sigma1, O2[index(k, j, i)], O2[index(k+1, j, i)]);
-                s_field[s_offset + n] = s;
-                // interpolate for z
-                s = interpolate_linear(rho, sigma0, sigma1, z[index(k, j, i)], z[index(k+1, j, i)]);
-                z_field[s_offset + n] = s;
+                for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
+                {
+                    std::vector<double> & iv{data.get(it->first)};
+                    s = interpolate_linear(rho, sigma0, sigma1, iv[index(k, j, i)], iv[index(k+1, j, i)]);
+                    it->second[s_offset + n] = s;
+                }
+
+                if ((i==705) && (j==350) && 0==1)
+                {
+                    std::vector<double> & s_rho = data.get("s_rho");
+                    std::cout << "rho: " << rho << std::endl;
+                    std::cout << "k: " << k << std::endl;
+                    std::cout << "z: " << data.get("z")[s_offset + n] << std::endl;
+                    for(size_t kk=0; kk<nz;kk++)
+                    {
+                        //double rho = Rho(salt[index(k, j, i)], temp[index(k, j, i)], z[index(kk, j, i)]);
+                        Rho rho_fun;
+                        double rho = rho_fun.density(salt[index(kk, j, i)], temp[index(kk, j, i)], -data.get("z")[index(kk, j, i)]);
+                        std::cout << "rho(z): " << data.get("z")[index(kk, j, i)]<< " : " << s_rho[kk] << " : "<< rho << " : " << salt[index(kk, j, i)] << " : " << temp[index(kk, j, i)] << std::endl;
+                    }
+                }
                 return_value = 0; // at least on valid point found
             }
             else
-                s_field[s_offset + n] = NAN;
+                for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
+                        it->second[s_offset + n] = NAN;
         }
         if ( (k1=j*100/ny/5) != k0)
         {

@@ -15,17 +15,12 @@ private:
     const int DIM2=2;
     const int DIM3=3;
     const int DIM4=4;
-    const int MASK_RHO_MATRIX=0;
-    const int O2_MATRIX=1;
-    const int SALT_MATRIX=2;
-    const int TEMP_MATRIX=3;
-    const int H_MATRIX=4;
-    const int ZETA_MATRIX=5;
-    const int S_RHO_MATRIX=6;
 
     // private variables
     netCDF::NcFile datafile;
-    std::vector<double> mask_rho, O2, salt, temp, h, zeta, s_rho, z, eta_rho, xi_rho;
+    std::map<std::string, std::vector<double>> variables_dict;
+    std::map<std::string, std::string> units_dict;
+
     size_t nt, nx, ny, nz;
 
     // private methods
@@ -33,7 +28,7 @@ private:
     int set_dimensions();
 
 public:
-    DataNC() : datafile(), mask_rho{}, O2{}, salt{}, temp{}, h{}, zeta{}, s_rho{}, z{}, eta_rho{}, xi_rho{}, nt{0}, nx{0}, ny{0}, nz{0}
+    DataNC() : datafile(), variables_dict{}, units_dict{}, nt{0}, nx{0}, ny{0}, nz{0}
     {
     }
 
@@ -43,18 +38,14 @@ public:
     int get_data(const std::string var_name, const size_t time_level);
     int get_data(const size_t time_level);
     int get_data();
+    int set_unit(const std::string var_name);
+    std::string & get_unit(const std::string var_name);
 
     size_t & get_nt();
     size_t & get_nx();
     size_t & get_ny();
     size_t & get_nz();
-    std::vector<double> & get_mask_rho();
-    std::vector<double> & get_z();
-    std::vector<double> & get_O2();
-    std::vector<double> & get_salt();
-    std::vector<double> & get_temp();
-    std::vector<double> & get_xi_rho();
-    std::vector<double> & get_eta_rho();
+    std::vector<double> & get(std::string var_name);
 };
 
 class PycnoNC
