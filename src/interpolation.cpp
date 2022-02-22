@@ -29,74 +29,160 @@
 
  */
 
-int Interpolation::interpolate_onto_surface(std::map<std::string, std::vector<double>> & interpolation_variables, DataNC & data, const double rho)
+void Interpolation::resolve_pycnocline_indices(const double rho, const size_t ny, const size_t nx,
+                                               DataNC &data,
+                                               std::vector<double> &sigma0,
+                                               std::vector<double> &sigma1,
+                                               std::vector<size_t> &kvec)
 {
-    int return_value = 1; // no successful interpolation
     int interpolation_result=0;
-    size_t n=0,k=0, s_offset=0;
-    double s=0;
-
-    // Ensure the surfaces have the right size
-
-    nx = data.get_nx();
-    ny = data.get_ny();
-    nz = data.get_nz();
-    for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
-    {
-        s_offset = it->second.size();
-        it->second.resize(s_offset + ny * nx);
-    }
+    size_t n=0, k=0;
     // read the prerequisites...
     std::vector<double> & salt{data.get("salt")};
     std::vector<double> & temp{data.get("temp")};
     std::vector<double> & mask_rho{data.get("mask_rho")};
-
-    double sigma0=0, sigma1=0; // density values to be computed for k and k+1
+    double _sigma0, _sigma1;
 
     for(size_t j=0; j<ny; ++j)
-    {
         for(size_t i=0; i<nx; ++i)
         {
-            n = index(j, i); // Gives the index in a 2d field
             if (mask_rho[n] < 0.5) //mask is a double 0. or 1. For some reason 1 means NOT masked...
+                kvec[n]=masked;
+            else
             {
-                for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
-                    it->second[s_offset + n] = NAN;
-                continue;
+                interpolation_result = interpolate_at_ji(k, _sigma0, _sigma1, rho, j, i, salt, temp);
+                if (interpolation_result==0)
+                {
+                    sigma0[n] = _sigma0;
+                    sigma1[n] = _sigma1;
+                    kvec[n] = k;
+                }
+                else
+                    kvec[n]=masked;
             }
-            interpolation_result = interpolate_at_ji(k, sigma0, sigma1, rho, j, i, salt, temp);
-            if (interpolation_result==0)
+            n++;
+        }
+}
+
+void Interpolation::interpolate_on_rho_points(std::vector<double> &f,
+                                              const size_t nx, const size_t ny, const double rho,
+                                              const std::vector<double> &iv,
+                                              const std::vector<size_t> &kvec,
+                                              const std::vector<double> &sigma0,
+                                              const std::vector<double> &sigma1)
+{
+    size_t k, n{0};
+    double s;
+    for(size_t j=0; j<ny; ++j)
+        for(size_t i=0; i<nx; ++i)
+        {
+            k = kvec[n];
+            if (k!=masked)
             {
-                for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
-                {
-                    std::vector<double> & iv{data.get(it->first)};
-                    s = interpolate_linear(rho, sigma0, sigma1, iv[index(k, j, i)], iv[index(k+1, j, i)]);
-                    it->second[s_offset + n] = s;
-                }
+                s = interpolate_linear(rho, sigma0[n], sigma1[n], iv[index(k, j, i)], iv[index(k+1, j, i)]);
+                f[n] = s;
+            }
+            n++;
+        }
+}
 
-                if ((i==705) && (j==350) && 0==1)
-                {
-                    std::cout << "rho: " << rho << std::endl;
-                    std::cout << "k: " << k << std::endl;
-                    std::cout << "z: " << data.get("z")[s_offset + n] << std::endl;
-                    std::cout << "nz: " << nz << std::endl;
-                    for(size_t kk=0; kk<nz;kk++)
-                    {
-
-                        Rho rho_fun;
-                        double rho = rho_fun.density(salt[index(kk, j, i)], temp[index(kk, j, i)]);
-                        std::cout << "rho(z): " << data.get("z")[index(kk, j, i)]<< " : " << " : "<< rho << " : " << salt[index(kk, j, i)] << " : " << temp[index(kk, j, i)] << " ";
-                        std::cout << kk << ":" << salt[index(kk, j, i)] << " " << temp[index(kk, j, i)] << "  " << data.get("z")[index(kk, j, i)] << std::endl;
-                    }
-                }
-                return_value = 0; // at least on valid point found
+void Interpolation::interpolate_on_u_points(std::vector<double> &f,
+                                              const size_t nx, const size_t ny, const double rho,
+                                              const std::vector<double> &iv,
+                                              const std::vector<size_t> &kvec,
+                                              const std::vector<double> &sigma0,
+                                              const std::vector<double> &sigma1)
+{
+    size_t k, k_right, n, n_right, m=0;
+    double s;
+    for(size_t j=0; j<ny; ++j)
+        for(size_t i=0; i<nx-1; ++i)
+        {
+            n = index(j,i);
+            n_right = n + 1;
+            k = kvec[n];
+            k_right = kvec[n_right];
+            if ((k!=masked) && k_right!=masked)
+            {
+                s = interpolate_linear(rho,
+                                       0.5*(sigma0[n]+sigma0[n_right]),
+                                       0.5*(sigma1[n]+sigma1[n_right]),
+                                       iv[index(k, j, i, 0, 1)], iv[index(k+1, j, i, 0, 1)]);
+                f[m] = s;
             }
             else
-                for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
-                        it->second[s_offset + n] = NAN;
+                f[m] = NAN;
+            m++;
+        }
+}
+
+void Interpolation::interpolate_on_v_points(std::vector<double> &f,
+                                              const size_t nx, const size_t ny, const double rho,
+                                              const std::vector<double> &iv,
+                                              const std::vector<size_t> &kvec,
+                                              const std::vector<double> &sigma0,
+                                              const std::vector<double> &sigma1)
+{
+    size_t k, k_up, n, n_up, m=0;
+    double s;
+    for(size_t j=0; j<ny-1; ++j)
+        for(size_t i=0; i<nx; ++i)
+        {
+            n = index(j,i);
+            n_up = index(j+1, i);
+            k = kvec[n];
+            k_up = kvec[n_up];
+            if ((k!=masked) && k_up!=masked)
+            {
+                s = interpolate_linear(rho,
+                                       0.5*(sigma0[n]+sigma0[n_up]),
+                                       0.5*(sigma1[n]+sigma1[n_up]),
+                                       iv[index(k, j, i, 1, 0)], iv[index(k+1, j, i, 1, 0)]);
+                f[m] = s;
+            }
+            else
+                f[m] = NAN;
+            m++;
+        }
+}
+
+void Interpolation::interpolate_onto_surface(std::map<std::string, std::vector<double>> & interpolation_variables, DataNC & data, const double rho)
+{
+    nx = data.get_nx(); // sizes of the rho-variables
+    ny = data.get_ny();
+    nz = data.get_nz();
+    // storage for sigma0 and sigma1, which we calculate only once.
+    std::vector<double> sigma0(ny*nx), sigma1(ny*nx);
+    std::vector<size_t> kvec(ny*nx);
+
+    resolve_pycnocline_indices(rho, ny,  nx, data, sigma0, sigma1, kvec);
+
+
+   // Ensure the surfaces have the right size
+    for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
+    {
+        size_t dy = (size_t) (data.get_variable_coordinates(it->first) == data.v_coordinates);
+        size_t dx = (size_t) (data.get_variable_coordinates(it->first) == data.u_coordinates);
+        it->second.resize((ny-dy)  * (nx-dx));
+    }
+
+    for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
+    {
+        std::vector<double> & iv{data.get(it->first)};
+        int cv=data.get_variable_coordinates(it->first);
+        switch (cv)
+        {
+            case data.rho_coordinates:
+                interpolate_on_rho_points(it->second, nx, ny, rho, iv, kvec, sigma0, sigma1);
+                break;
+            case data.u_coordinates:
+                interpolate_on_u_points(it->second, nx, ny, rho, iv, kvec, sigma0, sigma1);
+                break;
+            case data.v_coordinates:
+                interpolate_on_v_points(it->second, nx, ny, rho, iv, kvec, sigma0, sigma1);
+                break;
         }
     }
-    return return_value;
 }
 
 
@@ -112,11 +198,20 @@ size_t Interpolation::index(const size_t j, const size_t i)
     return j*nx + i;
 }
 
+size_t Interpolation::index(const size_t j, const size_t i, const size_t dy, const size_t dx)
+{
+    return j*(nx-dx) + i;
+}
+
 size_t Interpolation::index(const size_t k, const size_t j, const size_t i)
 {
     return k*ny*nx + j*nx + i;
 }
 
+size_t Interpolation::index(const size_t k, const size_t j, const size_t i, const size_t dy, const size_t dx)
+{
+    return k*(ny-dy)*(nx-dx) + j*(nx-dx) + i;
+}
 
 /*
   Note: Depths are negative, k=0 is at the bottom, k=nz is the surface.
@@ -124,11 +219,13 @@ size_t Interpolation::index(const size_t k, const size_t j, const size_t i)
 */
 
 
-int Interpolation::interpolate_at_ji(size_t &k, double & sigma0, double & sigma1, const double rho, const size_t j, const size_t i,
-                                     const std::vector<double> & salt, const std::vector<double> & temp)
+int Interpolation::interpolate_at_ji(size_t& k, double& sigma0, double& sigma1, const double rho,
+                                     const size_t j, const size_t i,
+                                     const std::vector<double>& salt, const std::vector<double>& temp)
 {
     int result=0; // all good, until proven otherwise
-
+    if((j==499) && (i==51))
+        result=0;
     size_t index0 = index(k, j, i), index1 = index(k+1, j, i);
     sigma0 = density_calculations.density(salt[index0], temp[index0]);
     sigma1 = density_calculations.density(salt[index1], temp[index1]);

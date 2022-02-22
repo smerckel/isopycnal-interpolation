@@ -83,16 +83,21 @@ int main(int argc, char** argv)
 
     std::cerr << "Read constant data..." << std::endl;
     data.get_data(); // gets constant fields.
-    std::cerr << "Store units..." << std::endl;
+    std::cerr << "Store units and coordinate system used..." << std::endl;
     // make a note of the units of all interpolation variables:
     for(auto it = interpolation_variables.begin(); it != interpolation_variables.end(); ++ it)
+    {
         data.set_unit(it->first);
+        data.set_variable_coordinates(it->first);
+    }
     std::cerr << "Create dimensions for output file..." << std::endl;
-    data_out.create_dimensions(pycnoclines, data.get("eta_rho"), data.get("xi_rho"));
+    data_out.create_dimensions(pycnoclines, data.get("eta_rho"), data.get("xi_rho"),
+                               data.get("eta_v"), data.get("xi_u"));;
 
     std::cerr << "Create pycnocline-interpolated variables for output file..." << std::endl;
     for(auto it = interpolation_variables.begin(); it != interpolation_variables.end(); ++ it)
-        data_out.create_surface_variable(it->first, data.get_unit(it->first));
+        data_out.create_surface_variable(it->first, data.get_unit(it->first),
+                                         data.get_variable_coordinates(it->first));
 
     std::cerr << "Start interpolation..." << std::endl;
 
@@ -107,7 +112,7 @@ int main(int argc, char** argv)
         std::cerr << "Write fields..." << std::endl;
         //write the fields
         for(auto it = interpolation_variables.begin(); it != interpolation_variables.end(); ++ it)
-            data_out.write_parameter(it->second, it->first, j);
+            data_out.write_parameter(it->second, it->first, data.get_variable_coordinates(it->first), j);
 
         if (j==0)
             break;

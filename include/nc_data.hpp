@@ -16,15 +16,18 @@ private:
     const int DIM3=3;
     const int DIM4=4;
 
+
     // private variables
     netCDF::NcFile datafile;
     std::map<std::string, std::vector<double>> variables_dict;
     std::map<std::string, std::string> units_dict;
+    std::map<std::string, int> variable_coordinates_dict;
     std::vector<std::string> interpolation_variables;
 
     size_t nt, nx, ny, nz;
     // variables that are to be read from NC file to compute z from s_rho
     double hc;
+    std::map<std::string, std::vector<double>> grid_dict;
     std::vector<double> sc_r, Cs_r;
 
     // private methods
@@ -35,7 +38,11 @@ private:
     int get_attributes(const std::string att_name, std::vector<double> &f);
 
 public:
-    DataNC() : datafile(), variables_dict{}, units_dict{}, interpolation_variables{}, nt{0}, nx{0}, ny{0}, nz{0}, hc{0}, sc_r{}, Cs_r{}
+    enum {rho_coordinates, u_coordinates, v_coordinates};
+
+    DataNC() : datafile(), variables_dict{}, units_dict{}, variable_coordinates_dict{}, \
+               interpolation_variables{}, nt{0}, nx{0}, ny{0}, nz{0}, \
+               hc{0}, sc_r{}, Cs_r{}
     {
     }
 
@@ -48,6 +55,9 @@ public:
     int set_unit(const std::string var_name);
     std::string & get_unit(const std::string var_name);
 
+    int get_variable_coordinates(const std::string var_name);
+    void set_variable_coordinates(const std::string var_name);
+
     size_t & get_nt();
     size_t & get_nx();
     size_t & get_ny();
@@ -58,6 +68,7 @@ public:
 class PycnoNC
 {
     private:
+    enum {rho_coordinates, u_coordinates, v_coordinates};
 
     //private attributes
     netCDF::NcFile datafile;
@@ -67,14 +78,15 @@ class PycnoNC
     size_t nt, nz, ny, nx;
 
     std::map<std::string, netCDF::NcVar> surface_variables;
-    std::vector<netCDF::NcDim> dimVector;
+    std::vector<netCDF::NcDim> dimVector_rho, dimVector_u, dimVector_v;
 
     //private methods
     void write_vector_variable(netCDF::NcVar ncv, const std::vector<double> & v);
 
     public:
 
-    PycnoNC() : datafile(), time{}, iso_pycnal{}, eta_rho{}, xi_rho{}, nt{0}, nz{0}, ny{0}, nx{0}, surface_variables{}, dimVector{}
+    PycnoNC() : datafile(), time{}, iso_pycnal{}, eta_rho{}, xi_rho{}, nt{0}, nz{0}, ny{0}, nx{0},
+                surface_variables{}, dimVector_rho{}, dimVector_u{}, dimVector_v{}
     {
     }
 
@@ -82,10 +94,15 @@ class PycnoNC
     void open(const std::string filename);
     int create_dimensions(const std::vector<double> pycnoclines,
                           const std::vector<double> eta_rho,
-                          const std::vector<double> xi_rho);
-    void create_surface_variable(std::string variable_name, std::string units);
+                          const std::vector<double> xi_rho,
+                          const std::vector<double> eta_v,
+                          const std::vector<double> xi_u);
 
-    int write_parameter(const std::vector<double> s, const std::string variable_name, size_t rec);
+    void create_surface_variable(const std::string variable_name, const std::string units,
+                                 const int variable_coordinates);
+
+    int write_parameter(const std::vector<double> s, const std::string variable_name,
+                        const int variable_coordinates, const size_t rec);
 };
 
 #endif // NC_DATA_HPP_INCLUDED
