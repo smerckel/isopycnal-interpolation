@@ -1,0 +1,22 @@
+# depslib dependency file v1.0
+1645603168 source:/home/lucas/working/git/CPP/pycnocline/src/interpolation.cpp
+	<iostream>
+	"interpolation.hpp"
+	<functional>
+
+1645531694 source:/home/lucas/working/git/CPP/pycnocline/src/nc_data.cpp
+	"nc_data.hpp"
+
+1645603569 source:/home/lucas/working/git/CPP/pycnocline/src/rho.cpp
+	"rho.hpp"
+	<iostream>
+	<cmath>
+
+1645603168 source:/home/lucas/working/git/CPP/pycnocline/src/main.cpp
+	<iostream>
+	<string>
+	"interpolation.hpp"
+	"rho.hpp"
+	"nc_data.hpp"
+	"cxxopts.hpp"
+
