@@ -6,7 +6,7 @@
 #include "nc_data.hpp"
 #include "cxxopts.hpp"
 
-using namespace std;
+const std::string VERSION{"0.1"};
 
 int main(int argc, char** argv)
 {
@@ -15,7 +15,7 @@ int main(int argc, char** argv)
 
     /* parse command line options */
     cxxopts::Options options("pycnocline",
-    "\nPycnocline is a C++ program that interpolates 3D variables onto one or more pycnocline\nlevels. The program reads from a netCDF file and writes the results into a new netCDF\nfile.\n");
+    "\nROMS model pycnocline interpolator (ropi)\n\nRopi is a C++ program that interpolates 3D variables onto one or more pycnocline\nlevels. The program reads from a netCDF file and writes the results into a new netCDF\nfile.\n");
 
     options.add_options()
     ("input", "Input netCDF file", cxxopts::value<std::string>())
@@ -25,7 +25,7 @@ int main(int argc, char** argv)
     ("h,help", "Print usage")
     ;
     options.parse_positional({"input", "output"});
-
+    int exit_value=0;
     auto result = options.parse(argc, argv);
     if (result.count("help"))
     {
@@ -35,30 +35,42 @@ int main(int argc, char** argv)
     if (result.count("variables")==0)
     {
         std::cout << "It is mandatory to supply a list of variables. (Use -v variable0,<varibale1>,...)" << std::endl;
-        exit(1);
+        exit_value |= 1;
     }
     if (result.count("pycnocline_levels")==0)
     {
         std::cout << "It is mandatory to supply a list of pycnocline levels. (Use -p 1026.3,...)" << std::endl;
-        exit(2);
+        exit_value |= 2;
     }
     if ( (result["input"].count()!=1) || (result["output"].count()!=1))
     {
         std::cout << "Please supply at both <input netCDF file> and <output netCDF file>." << std::endl;
-        exit(3);
+        exit_value |= 4;
     }
     if (result.unmatched().size()!=0)
     {
         std::cout << "Failed to parse the command line arguments properly." << std::endl;
         std::cout << "Note that lists are entered without spaces (-p 1026.1,1027.1)" << std::endl;
-        exit(4);
+        exit_value |= 8;
     }
-    // All input should be ok. Set the appropriate variables:
+    if (exit_value) // we had one or more command line issues. Exit so they can fix it.
+    {
+        if(exit_value>=7)
+            std::cout << "Hint: try 'ropi --help' for more information..." << std::endl;
+        exit(exit_value);
+    }
+    // All input should be ok.
+std::cout << "+----------------------------------------------------------------+" << std::endl;
+std::cout << "| ROMS model pycnocline interpolator (ropi) version " << VERSION << "          |" <<std::endl;
+std::cout << "| Copyright Lucas Merckelbach (lucas.merckelbach@hereon.de) 2022 |" << std::endl;
+std::cout << "+----------------------------------------------------------------+" << std::endl << std::endl;
+
+    //Set the appropriate variables:
     input_filename = result["input"].as<std::string>();
     output_filename = result["output"].as<std::string>();
     std::vector<double> pycnoclines = result["pycnocline_levels"].as<std::vector<double>>();
     std::map<std::string, std::vector<double>> interpolation_variables{};
-    std::vector<string> v = result["variables"].as<std::vector<std::string>>();
+    std::vector<std::string> v = result["variables"].as<std::vector<std::string>>();
     interpolation_variables["z"] = {};
     for (auto it = v.begin(); it!=v.end(); ++it)
         interpolation_variables[*it] = {};
@@ -114,8 +126,6 @@ int main(int argc, char** argv)
         for(auto it = interpolation_variables.begin(); it != interpolation_variables.end(); ++ it)
             data_out.write_parameter(it->second, it->first, data.get_variable_coordinates(it->first), j);
 
-        if (j==0)
-            break;
     }
     return 0;
 }

@@ -1,16 +1,17 @@
 cmake_minimum_required(VERSION 3.16)
 
-project("pycnocline")
+project("ropi")
+
 set(warnings "-Wall -Wextra -Werror")
-set(CMAKE_CXX_FLAGS "${warnings}")
-#set(CMAKE_INSTALL_PREFIX "path") # Can also be set on command line cmake -DCMAKE_INSTALL_PATH=path etc.
+set(compiler_flags "-O3")
+set(CMAKE_CXX_FLAGS "${warnings} ${compiler_flags}")
 
-add_executable(pycnocline src/interpolation.cpp src/main.cpp src/nc_data.cpp src/rho.cpp)
-include_directories(BEFORE include gsw_c_v3.05)
-target_link_libraries(pycnocline netcdf netcdf_c++4 gswteos-10)
+set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local") # Can also be set on command line cmake -DCMAKE_INSTALL_PATH=path etc.
 
-add_subdirectory("gsw_c_v3.05")
+add_executable(ropi src/interpolation.cpp src/main.cpp src/nc_data.cpp src/rho.cpp)
+include_directories(BEFORE include)
+target_link_libraries(ropi netcdf netcdf_c++4)
 
-install(TARGETS pycnocline
+install(TARGETS ropi
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib)

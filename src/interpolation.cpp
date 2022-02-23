@@ -79,7 +79,7 @@ void Interpolation::interpolate_on_rho_points(std::vector<double> &f,
             k = kvec[n];
             if (k!=masked)
             {
-                s = interpolate_linear(rho, sigma0[n], sigma1[n], iv[index(k, j, i)], iv[index(k+1, j, i)]);
+                s = interpolate_linear(rho, sigma0[n], sigma1[n], iv[index3(k, j, i)], iv[index3(k+1, j, i)]);
                 f[n] = s;
             }
             n++;
@@ -98,7 +98,7 @@ void Interpolation::interpolate_on_u_points(std::vector<double> &f,
     for(size_t j=0; j<ny; ++j)
         for(size_t i=0; i<nx-1; ++i)
         {
-            n = index(j,i);
+            n = index2(j,i);
             n_right = n + 1;
             k = kvec[n];
             k_right = kvec[n_right];
@@ -107,7 +107,7 @@ void Interpolation::interpolate_on_u_points(std::vector<double> &f,
                 s = interpolate_linear(rho,
                                        0.5*(sigma0[n]+sigma0[n_right]),
                                        0.5*(sigma1[n]+sigma1[n_right]),
-                                       iv[index(k, j, i, 0, 1)], iv[index(k+1, j, i, 0, 1)]);
+                                       iv[index3(k, j, i, 0, 1)], iv[index3(k+1, j, i, 0, 1)]);
                 f[m] = s;
             }
             else
@@ -128,8 +128,8 @@ void Interpolation::interpolate_on_v_points(std::vector<double> &f,
     for(size_t j=0; j<ny-1; ++j)
         for(size_t i=0; i<nx; ++i)
         {
-            n = index(j,i);
-            n_up = index(j+1, i);
+            n = index2(j,i);
+            n_up = index2(j+1, i);
             k = kvec[n];
             k_up = kvec[n_up];
             if ((k!=masked) && k_up!=masked)
@@ -137,7 +137,7 @@ void Interpolation::interpolate_on_v_points(std::vector<double> &f,
                 s = interpolate_linear(rho,
                                        0.5*(sigma0[n]+sigma0[n_up]),
                                        0.5*(sigma1[n]+sigma1[n_up]),
-                                       iv[index(k, j, i, 1, 0)], iv[index(k+1, j, i, 1, 0)]);
+                                       iv[index3(k, j, i, 1, 0)], iv[index3(k+1, j, i, 1, 0)]);
                 f[m] = s;
             }
             else
@@ -193,22 +193,22 @@ void Interpolation::interpolate_onto_surface(std::map<std::string, std::vector<d
  */
 
 
-size_t Interpolation::index(const size_t j, const size_t i)
+size_t Interpolation::index2(const size_t j, const size_t i)
 {
     return j*nx + i;
 }
 
-size_t Interpolation::index(const size_t j, const size_t i, const size_t dy, const size_t dx)
+size_t Interpolation::index2(const size_t j, const size_t i, const size_t dx)
 {
     return j*(nx-dx) + i;
 }
 
-size_t Interpolation::index(const size_t k, const size_t j, const size_t i)
+size_t Interpolation::index3(const size_t k, const size_t j, const size_t i)
 {
     return k*ny*nx + j*nx + i;
 }
 
-size_t Interpolation::index(const size_t k, const size_t j, const size_t i, const size_t dy, const size_t dx)
+size_t Interpolation::index3(const size_t k, const size_t j, const size_t i, const size_t dy, const size_t dx)
 {
     return k*(ny-dy)*(nx-dx) + j*(nx-dx) + i;
 }
@@ -226,7 +226,7 @@ int Interpolation::interpolate_at_ji(size_t& k, double& sigma0, double& sigma1, 
     int result=0; // all good, until proven otherwise
     if((j==499) && (i==51))
         result=0;
-    size_t index0 = index(k, j, i), index1 = index(k+1, j, i);
+    size_t index0 = index3(k, j, i), index1 = index3(k+1, j, i);
     sigma0 = density_calculations.density(salt[index0], temp[index0]);
     sigma1 = density_calculations.density(salt[index1], temp[index1]);
 
@@ -242,8 +242,8 @@ int Interpolation::interpolate_at_ji(size_t& k, double& sigma0, double& sigma1, 
                 break;
             }
             k--;
-            index0 = index(k, j, i);
-            index1 = index(k+1, j, i);
+            index0 = index3(k, j, i);
+            index1 = index3(k+1, j, i);
             sigma1=sigma0; //reuse previously computed densities.
             sigma0 = density_calculations.density(salt[index0], temp[index0]);
         }
@@ -255,8 +255,8 @@ int Interpolation::interpolate_at_ji(size_t& k, double& sigma0, double& sigma1, 
                 break;
             }
             k++;
-            index0 = index(k, j, i);
-            index1 = index(k+1, j, i);
+            index0 = index3(k, j, i);
+            index1 = index3(k+1, j, i);
             sigma0=sigma1; //reuse previously computed densities.
             sigma1 = density_calculations.density(salt[index1], temp[index1]);
         }

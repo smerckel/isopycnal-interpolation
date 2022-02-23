@@ -26,21 +26,8 @@ double Q20=+4.8314e-4;
 
 public:
 
-    double densityTEOS10(double sp, double tp, double p);
 
     double density(double sp, double tp);
-
-    double density_from_depth(double S, double T, double z)
-    {
-        return densityTEOS10(S, T, pressure_from_depth(z));
-    }
-
-
-    double pressure_from_depth(double z)
-    {
-        return z*1025*9.81*1e-4; //Pressure in dbar.
-    }
-
 
 };
 

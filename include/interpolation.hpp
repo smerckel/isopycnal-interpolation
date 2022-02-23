@@ -46,10 +46,10 @@ private:
                                     std::vector<size_t> &kvec);
 
     // get the index for 2 and 3 D ravelled arrays.
-    size_t index(const size_t j, const size_t i);
-    size_t index(const size_t j, const size_t i, const size_t dy, const size_t dx);
-    size_t index(const size_t k, const size_t j, const size_t i);
-    size_t index(const size_t k, const size_t j, const size_t i, const size_t dy, const size_t dx);
+    size_t index2(const size_t j, const size_t i);
+    size_t index2(const size_t j, const size_t i, const size_t dx);
+    size_t index3(const size_t k, const size_t j, const size_t i);
+    size_t index3(const size_t k, const size_t j, const size_t i, const size_t dy, const size_t dx);
 
 public:
 
