@@ -64,7 +64,7 @@ void Interpolation::resolve_pycnocline_indices(const double rho, const size_t ny
         }
 }
 
-void Interpolation::interpolate_on_rho_points(std::vector<double> &f,
+void Interpolation::interpolate_on_rho_points(std::vector<double> &f, const size_t offset,
                                               const size_t nx, const size_t ny, const double rho,
                                               const std::vector<double> &iv,
                                               const std::vector<size_t> &kvec,
@@ -80,20 +80,20 @@ void Interpolation::interpolate_on_rho_points(std::vector<double> &f,
             if (k!=masked)
             {
                 s = interpolate_linear(rho, sigma0[n], sigma1[n], iv[index3(k, j, i)], iv[index3(k+1, j, i)]);
-                f[n] = s;
+                f[offset + n] = s;
             }
             n++;
         }
 }
 
-void Interpolation::interpolate_on_u_points(std::vector<double> &f,
+void Interpolation::interpolate_on_u_points(std::vector<double> &f, const size_t offset,
                                               const size_t nx, const size_t ny, const double rho,
                                               const std::vector<double> &iv,
                                               const std::vector<size_t> &kvec,
                                               const std::vector<double> &sigma0,
                                               const std::vector<double> &sigma1)
 {
-    size_t k, k_right, n, n_right, m=0;
+    size_t k, k_right, n, n_right, m=offset;
     double s;
     for(size_t j=0; j<ny; ++j)
         for(size_t i=0; i<nx-1; ++i)
@@ -116,14 +116,14 @@ void Interpolation::interpolate_on_u_points(std::vector<double> &f,
         }
 }
 
-void Interpolation::interpolate_on_v_points(std::vector<double> &f,
+void Interpolation::interpolate_on_v_points(std::vector<double> &f, const size_t offset,
                                               const size_t nx, const size_t ny, const double rho,
                                               const std::vector<double> &iv,
                                               const std::vector<size_t> &kvec,
                                               const std::vector<double> &sigma0,
                                               const std::vector<double> &sigma1)
 {
-    size_t k, k_up, n, n_up, m=0;
+    size_t k, k_up, n, n_up, m=offset;
     double s;
     for(size_t j=0; j<ny-1; ++j)
         for(size_t i=0; i<nx; ++i)
@@ -146,7 +146,8 @@ void Interpolation::interpolate_on_v_points(std::vector<double> &f,
         }
 }
 
-void Interpolation::interpolate_onto_surface(std::map<std::string, std::vector<double>> & interpolation_variables, DataNC & data, const double rho)
+void Interpolation::interpolate_onto_surface(std::map<std::string, std::vector<double>> & interpolation_variables, DataNC & data,
+                                             const size_t i, const double rho)
 {
     nx = data.get_nx(); // sizes of the rho-variables
     ny = data.get_ny();
@@ -154,18 +155,22 @@ void Interpolation::interpolate_onto_surface(std::map<std::string, std::vector<d
     // storage for sigma0 and sigma1, which we calculate only once.
     std::vector<double> sigma0(ny*nx), sigma1(ny*nx);
     std::vector<size_t> kvec(ny*nx);
+    std::vector<size_t> s_offset(interpolation_variables.size());
 
     resolve_pycnocline_indices(rho, ny,  nx, data, sigma0, sigma1, kvec);
 
 
-   // Ensure the surfaces have the right size
+    // Ensure the surfaces have the right size
+    size_t m=0;
     for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
     {
         size_t dy = (size_t) (data.get_variable_coordinates(it->first) == data.v_coordinates);
         size_t dx = (size_t) (data.get_variable_coordinates(it->first) == data.u_coordinates);
-        it->second.resize((ny-dy)  * (nx-dx));
+        s_offset[m++] = i * (ny-dy)  * (nx-dx);
+        it->second.resize((i+1)*(ny-dy)  * (nx-dx));
     }
 
+    m=0;
     for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
     {
         std::vector<double> & iv{data.get(it->first)};
@@ -173,13 +178,13 @@ void Interpolation::interpolate_onto_surface(std::map<std::string, std::vector<d
         switch (cv)
         {
             case data.rho_coordinates:
-                interpolate_on_rho_points(it->second, nx, ny, rho, iv, kvec, sigma0, sigma1);
+                interpolate_on_rho_points(it->second, s_offset[m++], nx, ny, rho, iv, kvec, sigma0, sigma1);
                 break;
             case data.u_coordinates:
-                interpolate_on_u_points(it->second, nx, ny, rho, iv, kvec, sigma0, sigma1);
+                interpolate_on_u_points(it->second, s_offset[m++], nx, ny, rho, iv, kvec, sigma0, sigma1);
                 break;
             case data.v_coordinates:
-                interpolate_on_v_points(it->second, nx, ny, rho, iv, kvec, sigma0, sigma1);
+                interpolate_on_v_points(it->second, s_offset[m++], nx, ny, rho, iv, kvec, sigma0, sigma1);
                 break;
         }
     }

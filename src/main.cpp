@@ -14,8 +14,8 @@ int main(int argc, char** argv)
     std::string output_filename;
 
     /* parse command line options */
-    cxxopts::Options options("ropi",
-    "\nROMS model pycnocline interpolator (ropi)\n\nRopi is a C++ program that interpolates 3D variables onto one or more pycnocline\nlevels. The program reads from a netCDF file and writes the results into a new netCDF\nfile.\n");
+    cxxopts::Options options("ncii",
+    "\nROMS model netCDF isopycnal interpolation (ncii)\n\nNCII is a C++ program that interpolates 3D variables onto one or more pycnocline\nlevels. The program reads from a netCDF file and writes the results into a new netCDF\nfile.\n");
 
     options.add_options()
     ("input", "Input netCDF file", cxxopts::value<std::string>())
@@ -56,12 +56,12 @@ int main(int argc, char** argv)
     if (exit_value) // we had one or more command line issues. Exit so they can fix it.
     {
         if(exit_value>=7)
-            std::cout << "Hint: try 'ropi --help' for more information..." << std::endl;
+            std::cout << "Hint: try 'ncii --help' for more information..." << std::endl;
         exit(exit_value);
     }
     // All input should be ok.
 std::cout << "+----------------------------------------------------------------+" << std::endl;
-std::cout << "| ROMS model pycnocline interpolator (ropi) version " << VERSION << "          |" <<std::endl;
+std::cout << "| ROMS model netcdf isopyncal interpolation (ncii) version " << VERSION << "   |" <<std::endl;
 std::cout << "| Copyright Lucas Merckelbach (lucas.merckelbach@hereon.de) 2022 |" << std::endl;
 std::cout << "+----------------------------------------------------------------+" << std::endl << std::endl;
 
@@ -120,7 +120,7 @@ std::cout << "+----------------------------------------------------------------+
 
         std::cerr << "Interpolate fields..." << std::endl;
         for (size_t i=0; i<pycnoclines.size(); ++i)
-            interp.interpolate_onto_surface(interpolation_variables, data, pycnoclines[i]);
+            interp.interpolate_onto_surface(interpolation_variables, data, i, pycnoclines[i]);
         std::cerr << "Write fields..." << std::endl;
         //write the fields
         for(auto it = interpolation_variables.begin(); it != interpolation_variables.end(); ++ it)
