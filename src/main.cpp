@@ -14,7 +14,7 @@ int main(int argc, char** argv)
     std::string output_filename;
 
     /* parse command line options */
-    cxxopts::Options options("pycnocline",
+    cxxopts::Options options("ropi",
     "\nROMS model pycnocline interpolator (ropi)\n\nRopi is a C++ program that interpolates 3D variables onto one or more pycnocline\nlevels. The program reads from a netCDF file and writes the results into a new netCDF\nfile.\n");
 
     options.add_options()
