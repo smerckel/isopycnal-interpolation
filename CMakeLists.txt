@@ -10,7 +10,7 @@ set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local") # Can also be set on command line 
 
 add_executable(ncii src/interpolation.cpp src/main.cpp src/nc_data.cpp src/rho.cpp)
 include_directories(BEFORE include)
-target_link_libraries(ropi netcdf netcdf_c++4)
+target_link_libraries(ncii netcdf netcdf_c++4)
 
 install(TARGETS ncii
         RUNTIME DESTINATION bin
