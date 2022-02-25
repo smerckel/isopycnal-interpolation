@@ -11,11 +11,12 @@ class DataNC
 {
 private:
 
-    const int DIM1=1;
+    enum {DIM0, DIM1, DIM2, DIM3, DIM4};
+/*    const int DIM1=1;
     const int DIM2=2;
     const int DIM3=3;
     const int DIM4=4;
-
+*/
 
     // private variables
     netCDF::NcFile datafile;
@@ -27,7 +28,6 @@ private:
     size_t nt, nx, ny, nz;
     // variables that are to be read from NC file to compute z from s_rho
     double hc;
-    std::map<std::string, std::vector<double>> grid_dict;
     std::vector<double> sc_r, Cs_r;
 
     // private methods

@@ -29,6 +29,74 @@
 
  */
 
+
+void Interpolation::interpolate_onto_surface(std::map<std::string, std::vector<double>> & interpolation_variables, DataNC & data,
+                                             const size_t i, const double rho)
+{
+    nx = data.get_nx(); // sizes of the rho-variables
+    ny = data.get_ny();
+    nz = data.get_nz();
+    // storage for sigma0 and sigma1, which we calculate only once.
+    std::vector<double> sigma0(ny*nx), sigma1(ny*nx);
+    std::vector<size_t> kvec(ny*nx);
+    std::vector<size_t> s_offset(interpolation_variables.size());
+
+    resolve_pycnocline_indices(rho, ny,  nx, data, sigma0, sigma1, kvec);
+
+
+    // Ensure the surfaces have the right size
+    size_t m=0;
+    for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
+    {
+        size_t dy = (size_t) (data.get_variable_coordinates(it->first) == data.v_coordinates);
+        size_t dx = (size_t) (data.get_variable_coordinates(it->first) == data.u_coordinates);
+        s_offset[m++] = i * (ny-dy)  * (nx-dx);
+        it->second.resize((i+1)*(ny-dy)  * (nx-dx));
+    }
+
+    m=0;
+    for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
+    {
+        std::vector<double> & iv{data.get(it->first)};
+        int cv=data.get_variable_coordinates(it->first);
+        switch (cv)
+        {
+            case data.rho_coordinates:
+                interpolate_on_rho_points(it->second, s_offset[m++], nx, ny, rho, iv, kvec, sigma0, sigma1);
+                break;
+            case data.u_coordinates:
+                interpolate_on_u_points(it->second, s_offset[m++], nx, ny, rho, iv, kvec, sigma0, sigma1);
+                break;
+            case data.v_coordinates:
+                interpolate_on_v_points(it->second, s_offset[m++], nx, ny, rho, iv, kvec, sigma0, sigma1);
+                break;
+        }
+    }
+}
+
+
+/*
+ *
+ * P R I V A T E    I N T E R F A C E
+ *
+ */
+
+ /* resolve_pycnocline_indices
+
+  Finds vectors for kvec, sigma0 and sima1 representing 2D arrays for the whole domain, where
+
+  kvec is the k-index below the pycnocline,
+  sigma0 the density level for k
+  sigma1 the density level for k+1
+
+  Parameters
+  ----------
+  rho: density of the pycnocline
+  ny,ny: domain size
+  data: DataNC object
+  sigma0, sigma, kvec, see above.
+
+*/
 void Interpolation::resolve_pycnocline_indices(const double rho, const size_t ny, const size_t nx,
                                                DataNC &data,
                                                std::vector<double> &sigma0,
@@ -82,6 +150,8 @@ void Interpolation::interpolate_on_rho_points(std::vector<double> &f, const size
                 s = interpolate_linear(rho, sigma0[n], sigma1[n], iv[index3(k, j, i)], iv[index3(k+1, j, i)]);
                 f[offset + n] = s;
             }
+            else
+                f[offset + n] = NAN;
             n++;
         }
 }
@@ -146,58 +216,6 @@ void Interpolation::interpolate_on_v_points(std::vector<double> &f, const size_t
         }
 }
 
-void Interpolation::interpolate_onto_surface(std::map<std::string, std::vector<double>> & interpolation_variables, DataNC & data,
-                                             const size_t i, const double rho)
-{
-    nx = data.get_nx(); // sizes of the rho-variables
-    ny = data.get_ny();
-    nz = data.get_nz();
-    // storage for sigma0 and sigma1, which we calculate only once.
-    std::vector<double> sigma0(ny*nx), sigma1(ny*nx);
-    std::vector<size_t> kvec(ny*nx);
-    std::vector<size_t> s_offset(interpolation_variables.size());
-
-    resolve_pycnocline_indices(rho, ny,  nx, data, sigma0, sigma1, kvec);
-
-
-    // Ensure the surfaces have the right size
-    size_t m=0;
-    for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
-    {
-        size_t dy = (size_t) (data.get_variable_coordinates(it->first) == data.v_coordinates);
-        size_t dx = (size_t) (data.get_variable_coordinates(it->first) == data.u_coordinates);
-        s_offset[m++] = i * (ny-dy)  * (nx-dx);
-        it->second.resize((i+1)*(ny-dy)  * (nx-dx));
-    }
-
-    m=0;
-    for(auto it=interpolation_variables.begin(); it != interpolation_variables.end(); ++it)
-    {
-        std::vector<double> & iv{data.get(it->first)};
-        int cv=data.get_variable_coordinates(it->first);
-        switch (cv)
-        {
-            case data.rho_coordinates:
-                interpolate_on_rho_points(it->second, s_offset[m++], nx, ny, rho, iv, kvec, sigma0, sigma1);
-                break;
-            case data.u_coordinates:
-                interpolate_on_u_points(it->second, s_offset[m++], nx, ny, rho, iv, kvec, sigma0, sigma1);
-                break;
-            case data.v_coordinates:
-                interpolate_on_v_points(it->second, s_offset[m++], nx, ny, rho, iv, kvec, sigma0, sigma1);
-                break;
-        }
-    }
-}
-
-
-/*
- *
- * P R I V A T E    I N T E R F A C E
- *
- */
-
-
 size_t Interpolation::index2(const size_t j, const size_t i)
 {
     return j*nx + i;
@@ -229,8 +247,6 @@ int Interpolation::interpolate_at_ji(size_t& k, double& sigma0, double& sigma1, 
                                      const std::vector<double>& salt, const std::vector<double>& temp)
 {
     int result=0; // all good, until proven otherwise
-    if((j==499) && (i==51))
-        result=0;
     size_t index0 = index3(k, j, i), index1 = index3(k+1, j, i);
     sigma0 = density_calculations.density(salt[index0], temp[index0]);
     sigma1 = density_calculations.density(salt[index1], temp[index1]);
