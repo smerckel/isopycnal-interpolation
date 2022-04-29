@@ -2,14 +2,20 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Debug" />
+	<File name="src/interpolation.cpp" open="1" top="0" tabpos="5" split="2" active="1" splitpos="1814" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2409" topLine="34" />
+			<Cursor2 position="25565" topLine="579" />
+		</Cursor>
+	</File>
 	<File name="include/rho.hpp" open="1" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="490" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="src/rho.cpp" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="src/main.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="50" topLine="0" />
+			<Cursor1 position="1839" topLine="0" />
 		</Cursor>
 	</File>
 	<File name="include/interpolation.hpp" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -27,15 +33,9 @@
 			<Cursor1 position="589" topLine="9" />
 		</Cursor>
 	</File>
-	<File name="src/interpolation.cpp" open="1" top="1" tabpos="5" split="2" active="1" splitpos="1814" zoom_1="0" zoom_2="0">
+	<File name="src/rho.cpp" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="2527" topLine="49" />
-			<Cursor2 position="25565" topLine="579" />
-		</Cursor>
-	</File>
-	<File name="src/main.cpp" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="37" topLine="0" />
+			<Cursor1 position="50" topLine="0" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>

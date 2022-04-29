@@ -6,7 +6,7 @@
 #include "nc_data.hpp"
 #include "cxxopts.hpp"
 
-const std::string VERSION{"0.1"};
+const std::string VERSION{"0.2"};
 
 int main(int argc, char** argv)
 {
@@ -29,6 +29,7 @@ int main(int argc, char** argv)
     ("v,variables", "(list of) variable(s) to interpolate", cxxopts::value<std::vector<std::string>>())
     ("p,pycnocline_levels", "(list of) pycnocline density or densities", cxxopts::value<std::vector<double>>())
     ("h,help", "Print usage")
+    ("version", "Print version number")
     ;
     options.parse_positional({"input", "output"});
     int exit_value=0;
@@ -37,6 +38,11 @@ int main(int argc, char** argv)
     {
       std::cout << options.help() << std::endl;
       exit(0);
+    }
+    if (result.count("version"))
+    {
+        // just exit, header already shown says it all.
+        exit(0);
     }
     if (result.count("variables")==0)
     {
