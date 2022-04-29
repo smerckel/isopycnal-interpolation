@@ -10,6 +10,11 @@ const std::string VERSION{"0.1"};
 
 int main(int argc, char** argv)
 {
+    std::cout << "+----------------------------------------------------------------+" << std::endl;
+    std::cout << "| ROMS model netcdf isopyncal interpolation (ncii) version " << VERSION << "   |" <<std::endl;
+    std::cout << "| Copyright Lucas Merckelbach (lucas.merckelbach@hereon.de) 2022 |" << std::endl;
+    std::cout << "+----------------------------------------------------------------+" << std::endl << std::endl;
+
     std::string input_filename;
     std::string output_filename;
 
@@ -20,6 +25,7 @@ int main(int argc, char** argv)
     options.add_options()
     ("input", "Input netCDF file", cxxopts::value<std::string>())
     ("output", "Output netCDF file", cxxopts::value<std::string>())
+    ("a,avg", "Average variables between isopycnal levels")
     ("v,variables", "(list of) variable(s) to interpolate", cxxopts::value<std::vector<std::string>>())
     ("p,pycnocline_levels", "(list of) pycnocline density or densities", cxxopts::value<std::vector<double>>())
     ("h,help", "Print usage")
@@ -53,17 +59,21 @@ int main(int argc, char** argv)
         std::cout << "Note that lists are entered without spaces (-p 1026.1,1027.1)" << std::endl;
         exit_value |= 8;
     }
+
+    if ( (result["avg"].count()==1) && ((exit_value &2) || (result["pycnocline_levels"].as<std::vector<double>>().size()<2)) )
+    {
+        std::cout << "Cannot compute averages if less than two pycnocline values are given." << std::endl;
+        exit_value |= 16;
+    }
+
     if (exit_value) // we had one or more command line issues. Exit so they can fix it.
     {
         if(exit_value>=7)
             std::cout << "Hint: try 'ncii --help' for more information..." << std::endl;
         exit(exit_value);
     }
+
     // All input should be ok.
-std::cout << "+----------------------------------------------------------------+" << std::endl;
-std::cout << "| ROMS model netcdf isopyncal interpolation (ncii) version " << VERSION << "   |" <<std::endl;
-std::cout << "| Copyright Lucas Merckelbach (lucas.merckelbach@hereon.de) 2022 |" << std::endl;
-std::cout << "+----------------------------------------------------------------+" << std::endl << std::endl;
 
     //Set the appropriate variables:
     input_filename = result["input"].as<std::string>();
@@ -104,7 +114,7 @@ std::cout << "+----------------------------------------------------------------+
     }
     std::cerr << "Create dimensions for output file..." << std::endl;
     data_out.create_dimensions(pycnoclines, data.get("eta_rho"), data.get("xi_rho"),
-                               data.get("eta_v"), data.get("xi_u"));;
+                               data.get("eta_v"), data.get("xi_u"), result["avg"].count()==1);
 
     std::cerr << "Create pycnocline-interpolated variables for output file..." << std::endl;
     for(auto it = interpolation_variables.begin(); it != interpolation_variables.end(); ++ it)
@@ -118,9 +128,17 @@ std::cout << "+----------------------------------------------------------------+
         std::cerr << "Get data for time level " << j << "..." << std::endl;
         data.get_data(j); // gets the time fields for level 0
 
-        std::cerr << "Interpolate fields..." << std::endl;
-        for (size_t i=0; i<pycnoclines.size(); ++i)
-            interp.interpolate_onto_surface(interpolation_variables, data, i, pycnoclines[i]);
+        if (result["avg"].count() == 0)
+        {
+            std::cerr << "Interpolate fields..." << std::endl;
+            for (size_t i=0; i<pycnoclines.size(); ++i)
+                interp.interpolate_onto_surface(interpolation_variables, data, i, pycnoclines[i]);
+        }
+        else
+        {
+            std::cerr << "Computing averages..." << std::endl;
+            interp.compute_avg_between_isopycnals(interpolation_variables, data, pycnoclines);
+        }
         std::cerr << "Write fields..." << std::endl;
         //write the fields
         for(auto it = interpolation_variables.begin(); it != interpolation_variables.end(); ++ it)

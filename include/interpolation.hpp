@@ -15,6 +15,10 @@ private:
     const size_t masked=99999;
 
     double interpolate_linear(const double rho, const double sigma0, const double sigma1, const double v0, const double v1);
+    double integrate(const std::vector<double> &iv, const std::vector<double> &z, const size_t k0, const size_t k1, const size_t j, const size_t i, const size_t dy=0, const size_t dx=0);
+    double integrate(const std::vector<double> &iv, const std::vector<double> &z, const size_t k0, const size_t k1, const size_t j, const size_t i,
+                     const std::vector<double> &pycnocline_fields_iv0, const std::vector<double> &pycnocline_fields_iv1,
+                     const std::vector<double> &pycnocline_fields_z0, const std::vector<double> &pycnocline_fields_z1, const size_t dy=0, const size_t dx=0);
     int interpolate_at_ji(size_t & k, double & sigma0, double & sigma1, const double rho, const size_t j, const size_t i,
                           const std::vector<double> & salt, const std::vector<double> & temp);
 
@@ -38,6 +42,39 @@ private:
                                    const std::vector<size_t> &kvec,
                                    const std::vector<double> &sigma0,
                                    const std::vector<double> &sigma1);
+
+    void compute_avg_on_rho_points(std::vector<double> &f,
+                                   const size_t offset,
+                                   const size_t nx, const size_t ny, const std::vector<double> &pycnoclines,
+                                   const std::vector<double> &iv,
+                                   const std::vector<double> &z,
+                                   const std::vector<std::vector<size_t>> &kvec,
+                                   const std::vector<std::vector<double>> &pycnocline_fields_z,
+                                   const std::vector<std::vector<double>> &sigma0,
+                                   const std::vector<std::vector<double>> &sigma1);
+
+    void compute_avg_on_u_points(std::vector<double> &f,
+                                   const size_t offset,
+                                   const size_t nx, const size_t ny, const std::vector<double> &pycnoclines,
+                                   const std::vector<double> &iv,
+                                   const std::vector<double> &z,
+                                   const std::vector<std::vector<size_t>> &kvec,
+                                   const std::vector<std::vector<double>> &pycnocline_fields_z,
+                                   const std::vector<std::vector<double>> &sigma0,
+                                   const std::vector<std::vector<double>> &sigma1);
+
+    void compute_avg_on_v_points(std::vector<double> &f,
+                                   const size_t offset,
+                                   const size_t nx, const size_t ny, const std::vector<double> &pycnoclines,
+                                   const std::vector<double> &iv,
+                                   const std::vector<double> &z,
+                                   const std::vector<std::vector<size_t>> &kvec,
+                                   const std::vector<std::vector<double>> &pycnocline_fields_z,
+                                   const std::vector<std::vector<double>> &sigma0,
+                                   const std::vector<std::vector<double>> &sigma1);
+
+
+
 
     void resolve_pycnocline_indices(const double rho, const size_t ny, const size_t nx,
                                     DataNC &data,
@@ -64,6 +101,10 @@ public:
     };
     void interpolate_onto_surface(std::map<std::string, std::vector<double>> & interpolation_variables, DataNC & data, const size_t i, const double rho);
 
+    /* computes average values between two isopycnals with density rho0 and rho1 */
+    void compute_avg_between_isopycnals(std::map<std::string, std::vector<double>> & interpolation_variables,
+                                        DataNC & data,
+                                        const std::vector<double> pycnoclines);
 
 
 };

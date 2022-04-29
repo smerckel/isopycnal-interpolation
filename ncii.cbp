@@ -11,8 +11,9 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="-v O2,u,v,temp,salt  -p 1026.5,1027.1 data/test.nc data/pycnocline.nc" />
+				<Option parameters="-v O2,temp,salt,v,u -a -p 1026.5,1027.1 data/test.nc data/pycnocline.nc" />
 				<Compiler>
+					<Add option="-Wall" />
 					<Add option="-g" />
 				</Compiler>
 			</Target>

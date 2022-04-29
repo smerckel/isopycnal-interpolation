@@ -11,6 +11,8 @@ return 0;
 
 int DataNC::set_unit(const std::string var_name)
 {
+    if (var_name == "z")
+        return 0; // z is not a NC variable, so we cannot set the unit from looking it up in the NC file. It is set explicitly in compute_z_levels()
     netCDF::NcVar nc_var = datafile.getVar(var_name);
     int return_value=0;
     try
@@ -291,31 +293,46 @@ int PycnoNC::create_dimensions(const std::vector<double> pycnoclines,
                                const std::vector<double> eta_rho,
                                const std::vector<double> xi_rho,
                                const std::vector<double> eta_v,
-                               const std::vector<double> xi_u)
+                               const std::vector<double> xi_u,
+                               const bool compute_averages)
 {
+    netCDF::NcDim vDim; // dimension to be used for the variables
     nz = pycnoclines.size();
     ny = eta_rho.size();
     nx = xi_rho.size();
     // create the dimensions
     netCDF::NcDim tDim = datafile.addDim("time"); // unlimited dimension
     netCDF::NcDim zDim = datafile.addDim("pycnocline", nz);
+    if (compute_averages)
+    {
+        nlayers = nz -1;
+        vDim = datafile.addDim("layer", nlayers);
+    }
+    else
+    {
+        vDim = zDim;
+        nlayers = nz;
+    }
+
     netCDF::NcDim yDim = datafile.addDim("eta_rho", ny);
     netCDF::NcDim xDim = datafile.addDim("xi_rho", nx);
     netCDF::NcDim yvDim = datafile.addDim("eta_v", ny-1);
     netCDF::NcDim xuDim = datafile.addDim("xi_u", nx-1);
+
     // set the dimensions in the private attribute dimVector for later use.
     dimVector_rho.push_back(tDim);
-    dimVector_rho.push_back(zDim);
+    dimVector_rho.push_back(vDim);
     dimVector_rho.push_back(yDim);
     dimVector_rho.push_back(xDim);
 
     dimVector_u.push_back(tDim);
-    dimVector_u.push_back(zDim);
+    dimVector_u.push_back(vDim);
     dimVector_u.push_back(yDim);
     dimVector_u.push_back(xuDim);
 
+
     dimVector_v.push_back(tDim);
-    dimVector_v.push_back(zDim);
+    dimVector_v.push_back(vDim);
     dimVector_v.push_back(yvDim);
     dimVector_v.push_back(xDim);
 
@@ -325,7 +342,15 @@ int PycnoNC::create_dimensions(const std::vector<double> pycnoclines,
     netCDF::NcVar pycnoclines_var = datafile.addVar("pycnoclines", netCDF::ncDouble, zDim);
     netCDF::NcVar xi_u_var = datafile.addVar("xi_u", netCDF::ncDouble, xuDim);
     netCDF::NcVar eta_v_var = datafile.addVar("eta_v", netCDF::ncDouble, yvDim);
-
+    if (compute_averages)
+    {
+        netCDF::NcVar layers_var = datafile.addVar("layers", netCDF::ncInt, vDim);
+        std::vector<size_t> layer_values(nlayers);
+        for(size_t i=0; i<nlayers; i++)
+            layer_values[i]=i;
+        write_vector_variable(layers_var, layer_values);
+        layers_var.putAtt("standard_name", "layer_index");
+    }
     //write the coordinate values
     write_vector_variable(pycnoclines_var, pycnoclines);
     write_vector_variable(eta_rho_var, eta_rho);
@@ -353,6 +378,16 @@ void PycnoNC::write_vector_variable(netCDF::NcVar ncv, const std::vector<double>
     delete [] pvalues;
 }
 
+void PycnoNC::write_vector_variable(netCDF::NcVar ncv, const std::vector<size_t> & v)
+{
+    size_t n = v.size();
+    size_t *pvalues = new size_t [n];
+    for (size_t i=0; i<n; i++)
+        pvalues[i] = v[i];
+    ncv.putVar(pvalues);
+    delete [] pvalues;
+}
+
 int PycnoNC::write_parameter(const std::vector<double> s, const std::string variable_name,
                              const int variable_coordinates, const size_t rec)
 {
@@ -364,10 +399,9 @@ int PycnoNC::write_parameter(const std::vector<double> s, const std::string vari
     startp.push_back(0); // eta start index
     startp.push_back(0); // xi start index
     countp.push_back(1); // write one time level at a time.
-    countp.push_back(nz);
+    countp.push_back(nlayers); // nlayers equals nz or nz-1 for isopycnal interpolation or average calcs, respectively
     countp.push_back(ny - (size_t) (variable_coordinates==v_coordinates));
     countp.push_back(nx - (size_t) (variable_coordinates==u_coordinates));
-
     // convert vector to pointer and write the variable.
     size_t n = s.size();
     double *pvalues = new double [n];
