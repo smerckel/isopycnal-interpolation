@@ -2,19 +2,50 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Debug" />
-	<File name="src/interpolation.cpp" open="1" top="1" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+<<<<<<< HEAD
+	<File name="src/interpolation.cpp" open="1" top="0" tabpos="5" split="2" active="1" splitpos="1814" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="6132" topLine="140" />
+			<Cursor1 position="2409" topLine="34" />
+			<Cursor2 position="25565" topLine="579" />
+=======
+	<File name="include/rho.hpp" open="1" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="490" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="include/nc_data.hpp" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="src/nc_data.cpp" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="0" topLine="0" />
+			<Cursor1 position="2642" topLine="50" />
+>>>>>>> 376b4f4bf21f37d8a27d8d8da267e16a1f8f559a
+		</Cursor>
+	</File>
+	<File name="include/rho.hpp" open="1" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+<<<<<<< HEAD
+			<Cursor1 position="490" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="src/main.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1839" topLine="0" />
 		</Cursor>
 	</File>
 	<File name="include/interpolation.hpp" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1573" topLine="17" />
+			<Cursor1 position="1003" topLine="48" />
+		</Cursor>
+	</File>
+	<File name="src/nc_data.cpp" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="463" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="include/nc_data.hpp" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="589" topLine="9" />
+=======
+			<Cursor1 position="214" topLine="0" />
+>>>>>>> 376b4f4bf21f37d8a27d8d8da267e16a1f8f559a
 		</Cursor>
 	</File>
 	<File name="src/rho.cpp" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -22,19 +53,22 @@
 			<Cursor1 position="50" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="include/rho.hpp" open="1" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="490" topLine="1" />
-		</Cursor>
-	</File>
+<<<<<<< HEAD
+=======
 	<File name="src/main.cpp" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="5847" topLine="99" />
+			<Cursor1 position="5847" topLine="83" />
 		</Cursor>
 	</File>
-	<File name="src/nc_data.cpp" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="include/interpolation.hpp" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="366" topLine="15" />
+			<Cursor1 position="1573" topLine="17" />
 		</Cursor>
 	</File>
+	<File name="src/interpolation.cpp" open="1" top="1" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="4708" topLine="109" />
+		</Cursor>
+	</File>
+>>>>>>> 376b4f4bf21f37d8a27d8d8da267e16a1f8f559a
 </CodeBlocks_layout_file>

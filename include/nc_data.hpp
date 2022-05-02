@@ -75,17 +75,18 @@ class PycnoNC
 
     std::vector<double> time, iso_pycnal, eta_rho, xi_rho;
 
-    size_t nt, nz, ny, nx;
+    size_t nt, nz, nlayers, ny, nx;
 
     std::map<std::string, netCDF::NcVar> surface_variables;
     std::vector<netCDF::NcDim> dimVector_rho, dimVector_u, dimVector_v;
 
     //private methods
     void write_vector_variable(netCDF::NcVar ncv, const std::vector<double> & v);
+    void write_vector_variable(netCDF::NcVar ncv, const std::vector<size_t> & v);
 
     public:
 
-    PycnoNC() : datafile(), time{}, iso_pycnal{}, eta_rho{}, xi_rho{}, nt{0}, nz{0}, ny{0}, nx{0},
+    PycnoNC() : datafile(), time{}, iso_pycnal{}, eta_rho{}, xi_rho{}, nt{0}, nz{0}, nlayers{0}, ny{0}, nx{0},
                 surface_variables{}, dimVector_rho{}, dimVector_u{}, dimVector_v{}
     {
     }
@@ -96,7 +97,8 @@ class PycnoNC
                           const std::vector<double> eta_rho,
                           const std::vector<double> xi_rho,
                           const std::vector<double> eta_v,
-                          const std::vector<double> xi_u);
+                          const std::vector<double> xi_u,
+                          const bool compute_averages);
 
     void create_surface_variable(const std::string variable_name, const std::string units,
                                  const int variable_coordinates);
