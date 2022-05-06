@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include "ndarray.hpp"
 
 class DataNC
 {
@@ -20,7 +21,7 @@ private:
 
     // private variables
     netCDF::NcFile datafile;
-    std::map<std::string, std::vector<double>> variables_dict;
+    std::map<std::string, NDarray<double>> variables_dict;
     std::map<std::string, std::string> units_dict;
     std::map<std::string, int> variable_coordinates_dict;
     std::vector<std::string> interpolation_variables;
@@ -62,7 +63,7 @@ public:
     size_t & get_nx();
     size_t & get_ny();
     size_t & get_nz();
-    std::vector<double> & get(std::string var_name);
+    NDarray<double> & get(std::string var_name);
 };
 
 class PycnoNC
@@ -81,8 +82,11 @@ class PycnoNC
     std::vector<netCDF::NcDim> dimVector_rho, dimVector_u, dimVector_v;
 
     //private methods
+    void write_vector_variable(netCDF::NcVar ncv, const NDarray<double> & v);
+    void write_vector_variable(netCDF::NcVar ncv, const NDarray<size_t> & v);
     void write_vector_variable(netCDF::NcVar ncv, const std::vector<double> & v);
     void write_vector_variable(netCDF::NcVar ncv, const std::vector<size_t> & v);
+
 
     public:
 
@@ -93,17 +97,17 @@ class PycnoNC
 
 
     void open(const std::string filename);
-    int create_dimensions(const std::vector<double> pycnoclines,
-                          const std::vector<double> eta_rho,
-                          const std::vector<double> xi_rho,
-                          const std::vector<double> eta_v,
-                          const std::vector<double> xi_u,
+    int create_dimensions(const std::vector<double> & pycnoclines,
+                          const NDarray<double> & eta_rho,
+                          const NDarray<double> & xi_rho,
+                          const NDarray<double> & eta_v,
+                          const NDarray<double> & xi_u,
                           const bool compute_averages);
 
     void create_surface_variable(const std::string variable_name, const std::string units,
                                  const int variable_coordinates);
 
-    int write_parameter(const std::vector<double> s, const std::string variable_name,
+    int write_parameter(const NDarray<double> s, const std::string variable_name,
                         const int variable_coordinates, const size_t rec);
 };
 

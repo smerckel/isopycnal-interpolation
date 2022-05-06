@@ -5,6 +5,7 @@
 #include "rho.hpp"
 #include "nc_data.hpp"
 #include "cxxopts.hpp"
+#include "ndarray.hpp"
 
 const std::string VERSION{"0.2"};
 
@@ -84,10 +85,16 @@ int main(int argc, char** argv)
     //Set the appropriate variables:
     input_filename = result["input"].as<std::string>();
     output_filename = result["output"].as<std::string>();
+
+    //pycnoclines holds a vector with the density values of the isopycnals:
     std::vector<double> pycnoclines = result["pycnocline_levels"].as<std::vector<double>>();
-    std::map<std::string, std::vector<double>> interpolation_variables{};
+
+    // interpolation_variables is a dictionary <variable name : 2D array>
+    std::map<std::string, NDarray<double>> interpolation_variables{};
+
+    //set the variable names to a vector of strings
     std::vector<std::string> v = result["variables"].as<std::vector<std::string>>();
-    interpolation_variables["z"] = {};
+    interpolation_variables["z"] = {}; // added by default.
     for (auto it = v.begin(); it!=v.end(); ++it)
         interpolation_variables[*it] = {};
     // Tell 'em what we are going to do...
@@ -126,13 +133,20 @@ int main(int argc, char** argv)
     for(auto it = interpolation_variables.begin(); it != interpolation_variables.end(); ++ it)
         data_out.create_surface_variable(it->first, data.get_unit(it->first),
                                          data.get_variable_coordinates(it->first));
+    // Set the size of all interpolation_variables
+    for(auto it = interpolation_variables.begin(); it != interpolation_variables.end(); ++ it)
+    {
+        size_t ny = data.get_ny() - (size_t) (data.get_variable_coordinates(it->first) == data.v_coordinates);
+        size_t nx = data.get_nx() - (size_t) (data.get_variable_coordinates(it->first) == data.u_coordinates);
+        size_t nlayers = pycnoclines.size() - (size_t) (result["avg"].count() == 1);
+        it->second.resize(nlayers, ny, nx);
+    }
 
     std::cerr << "Start interpolation..." << std::endl;
-
     for (size_t j=0; j<data.get_nt(); j++)
     {
         std::cerr << "Get data for time level " << j << "..." << std::endl;
-        data.get_data(j); // gets the time fields for level 0
+        data.get_data(j); // gets the time fields for level j
 
         if (result["avg"].count() == 0)
         {
@@ -149,7 +163,6 @@ int main(int argc, char** argv)
         //write the fields
         for(auto it = interpolation_variables.begin(); it != interpolation_variables.end(); ++ it)
             data_out.write_parameter(it->second, it->first, data.get_variable_coordinates(it->first), j);
-
     }
     return 0;
 }

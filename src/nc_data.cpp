@@ -4,6 +4,7 @@
 int DataNC::open(const std::string filename, const std::vector<std::string> v)
 {
     datafile.open(filename, netCDF::NcFile::read);
+    std::cerr << "File " << filename << " opened successfully..." << std::endl;
     set_dimensions();
     interpolation_variables=v;
 return 0;
@@ -91,29 +92,31 @@ int DataNC::get_data_const(const std::string var_name)
     get_attributes("hc", hc);
     get_attributes("Cs_r", Cs_r);
     get_attributes("sc_r", sc_r);
-
     netCDF::NcVar nc_var = datafile.getVar(var_name);
     std::vector<netCDF::NcDim> dims = nc_var.getDims();
     size_t n = 0;
+    NDarray<double> v;
     if (dims.size()==(size_t) DIM2)
     {
         size_t ny, nx;
         ny = dims[0].getSize();
         nx = dims[1].getSize();
+        NDarray<double> _v(ny, nx);
         n = ny * nx;
+        v = _v;
     }
     else if (dims.size() == (size_t) DIM1)
     {
         n = dims[0].getSize();
+        NDarray<double> _v(n);
+        v = _v;
     }
     else
         throw std::runtime_error("Unhandled dimension.");
 
     double *pvalues = new double [n];
     nc_var.getVar(pvalues);
-    std::vector<double> v(n);
-    for(size_t j=0; j<n; j++)
-        v[j] = pvalues[j];
+    v = pvalues;
     variables_dict[var_name] = v;
     delete [] pvalues;
     return 0;
@@ -124,12 +127,11 @@ int DataNC::get_data(const std::string var_name, const size_t time_level)
     netCDF::NcVar nc_var = datafile.getVar(var_name);
     std::vector<netCDF::NcDim> dims = nc_var.getDims();
     std::vector<size_t> startp,countp;
-    size_t nt = 0, n = 0;
+    size_t nt = 0;
     size_t _ny=1, _nx=1, _nz=1;
 
     startp.push_back(time_level);
     countp.push_back(1);
-
     if (dims.size()==(size_t) DIM3)
     {
         nt = dims[0].getSize();
@@ -156,19 +158,22 @@ int DataNC::get_data(const std::string var_name, const size_t time_level)
     else
         throw std::runtime_error("Unhandled variable dimension.");
 
-    n = _nz * _ny * _nx; //total elements in this variable
-
     if (time_level>nt)
     {
         throw std::runtime_error("Requesting a time level that does not exist.");
     }
 
+    size_t n = _nz * _ny * _nx; //total elements in this variable
     double *pvalues = new double [n];
-
     nc_var.getVar(startp, countp, pvalues);
-    std::vector<double> v(n);
-    for(size_t j=0; j<n; j++)
-        v[j] = pvalues[j];
+    NDarray<double> v;
+    if (dims.size() == (size_t) DIM3)
+        v.resize(_ny, _nx);
+    else if (dims.size() == (size_t) DIM4)
+        v.resize(_nz, _ny, _nx);
+    else
+        throw std::runtime_error("Unhandled variable dimension.");
+    v=pvalues;
     variables_dict[var_name] = v;
     delete [] pvalues;
     // set the coordinate system used for this variable
@@ -230,7 +235,7 @@ size_t & DataNC::get_nz()
     return nz;
 }
 
-std::vector<double> & DataNC::get(std::string var_name)
+NDarray<double> & DataNC::get(std::string var_name)
 {
     return variables_dict[var_name];
 }
@@ -240,23 +245,22 @@ std::vector<double> & DataNC::get(std::string var_name)
 int DataNC::compute_z_levels()
 {
     // check if we have all the ingredients ready
-    std::vector<double> h = variables_dict["h"];
-    std::vector<double> zeta =variables_dict["zeta"];
-    //std::vector<double> s_rho = variables_dict["s_rho"];
-    //if ( (h.size()==0) || (zeta.size()==0) )
-    //    throw std::runtime_error("No data available for h and/or zeta.");
+    NDarray<double> h = variables_dict["h"];
+    NDarray<double> zeta =variables_dict["zeta"];
 
     // compute depth from s_rho using the matlab code in ../doc as template
-    size_t n = nz * ny * nx;
-    std::vector<double> z(n);
+    NDarray<double> z(nz, ny, nx);
     double cff, cff1;
-    n=0;
     for (size_t kdx=0; kdx<nz; kdx++)
     {
         cff = hc *sc_r[kdx];
         cff1 = Cs_r[kdx];
-        for (size_t idx=0; idx<ny * nx; idx++)
-            z[n++] = zeta[idx] + (zeta[idx] + h[idx]) * (cff + cff1*h[idx]) / (h[idx] + hc);
+        for (size_t jdx=0; jdx<ny; jdx++)
+            for (size_t idx=0; idx<nx; idx++)
+            {
+                z(kdx, jdx, idx) = zeta(jdx, idx) + (zeta(jdx, idx) + h(jdx, idx)) * (cff + cff1 * h(jdx, idx)) / (h(jdx, idx) + hc);
+            //z(n++) = zeta(idx) + (zeta(idx) + h(idx)) * (cff + cff1*h(idx)) / (h(idx) + hc);
+            }
     }
     variables_dict["z"] = z;
     /* z is not a netcdf variable as such, so we cannot find
@@ -289,11 +293,11 @@ void PycnoNC::open(std::string filename)
     datafile.open(filename, netCDF::NcFile::replace); // overwrites existing one.
 }
 
-int PycnoNC::create_dimensions(const std::vector<double> pycnoclines,
-                               const std::vector<double> eta_rho,
-                               const std::vector<double> xi_rho,
-                               const std::vector<double> eta_v,
-                               const std::vector<double> xi_u,
+int PycnoNC::create_dimensions(const std::vector<double> & pycnoclines,
+                               const NDarray<double> & eta_rho,
+                               const NDarray<double> & xi_rho,
+                               const NDarray<double> & eta_v,
+                               const NDarray<double> & xi_u,
                                const bool compute_averages)
 {
     netCDF::NcDim vDim; // dimension to be used for the variables
@@ -368,6 +372,26 @@ int PycnoNC::create_dimensions(const std::vector<double> pycnoclines,
     return 0;
 }
 
+void PycnoNC::write_vector_variable(netCDF::NcVar ncv, const NDarray<double> & v)
+{
+    size_t n = v.size();
+    double *pvalues = new double [n];
+    for (size_t i=0; i<n; i++)
+        pvalues[i] = v(i);
+    ncv.putVar(pvalues);
+    delete [] pvalues;
+}
+
+void PycnoNC::write_vector_variable(netCDF::NcVar ncv, const NDarray<size_t> & v)
+{
+    size_t n = v.size();
+    size_t *pvalues = new size_t [n];
+    for (size_t i=0; i<n; i++)
+        pvalues[i] = v(i);
+    ncv.putVar(pvalues);
+    delete [] pvalues;
+}
+
 void PycnoNC::write_vector_variable(netCDF::NcVar ncv, const std::vector<double> & v)
 {
     size_t n = v.size();
@@ -388,7 +412,8 @@ void PycnoNC::write_vector_variable(netCDF::NcVar ncv, const std::vector<size_t>
     delete [] pvalues;
 }
 
-int PycnoNC::write_parameter(const std::vector<double> s, const std::string variable_name,
+
+int PycnoNC::write_parameter(const NDarray<double> s, const std::string variable_name,
                              const int variable_coordinates, const size_t rec)
 {
     // get the nc variable first
@@ -407,7 +432,7 @@ int PycnoNC::write_parameter(const std::vector<double> s, const std::string vari
     double *pvalues = new double [n];
     for (size_t i=0; i<n; i++)
     {
-        pvalues[i] = s[i];
+        pvalues[i] = s(i);
     }
     v.putVar(startp, countp, pvalues);
     delete [] pvalues;

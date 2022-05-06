@@ -4,6 +4,7 @@
 #include <vector>
 #include <cmath>
 
+#include "ndarray.hpp"
 #include "nc_data.hpp"
 #include "rho.hpp"
 
@@ -15,78 +16,66 @@ private:
     const size_t masked=99999;
 
     double interpolate_linear(const double rho, const double sigma0, const double sigma1, const double v0, const double v1);
-    double integrate(const std::vector<double> &iv, const std::vector<double> &z, const size_t k0, const size_t k1, const size_t j, const size_t i, const size_t dy=0, const size_t dx=0);
-    double integrate(const std::vector<double> &iv, const std::vector<double> &z, const size_t k0, const size_t k1, const size_t j, const size_t i,
-                     const std::vector<double> &pycnocline_fields_iv0, const std::vector<double> &pycnocline_fields_iv1,
-                     const std::vector<double> &pycnocline_fields_z0, const std::vector<double> &pycnocline_fields_z1, const size_t dy=0, const size_t dx=0);
+
+    double integrate(const NDarray<double> &v, const NDarray<double> &z, const size_t k0, const size_t k1, const size_t j, const size_t i,
+                     const size_t layer, const NDarray<double> &pycnocline_fields_v, const NDarray<double> &pycnocline_fields_z);
+
     int interpolate_at_ji(size_t & k, double & sigma0, double & sigma1, const double rho, const size_t j, const size_t i,
-                          const std::vector<double> & salt, const std::vector<double> & temp);
+                          const NDarray<double> & salt, const NDarray<double> & temp);
 
-    void interpolate_on_rho_points(std::vector<double> &f, const size_t offset,
+    void interpolate_on_rho_points(NDarray<double> &f, const size_t offset,
                                    const size_t nx, const size_t ny, const double rho,
-                                   const std::vector<double> &iv,
-                                   const std::vector<size_t> &kvec,
-                                   const std::vector<double> &sigma0,
-                                   const std::vector<double> &sigma1);
+                                   const NDarray<double> &v,
+                                   const NDarray<size_t> &kvec,
+                                   const NDarray<double> &sigma0,
+                                   const NDarray<double> &sigma1);
 
-    void interpolate_on_u_points(std::vector<double> &f, const size_t offset,
+    void interpolate_on_u_points(NDarray<double> &f, const size_t offset,
                                    const size_t nx, const size_t ny, const double rho,
-                                   const std::vector<double> &iv,
-                                   const std::vector<size_t> &kvec,
-                                   const std::vector<double> &sigma0,
-                                   const std::vector<double> &sigma1);
+                                   const NDarray<double> &v,
+                                   const NDarray<size_t> &kvec,
+                                   const NDarray<double> &sigma0,
+                                   const NDarray<double> &sigma1);
 
-    void interpolate_on_v_points(std::vector<double> &f, const size_t offset,
+    void interpolate_on_v_points(NDarray<double> &f, const size_t offset,
                                    const size_t nx, const size_t ny, const double rho,
-                                   const std::vector<double> &iv,
-                                   const std::vector<size_t> &kvec,
-                                   const std::vector<double> &sigma0,
-                                   const std::vector<double> &sigma1);
+                                   const NDarray<double> &iv,
+                                   const NDarray<size_t> &kvec,
+                                   const NDarray<double> &sigma0,
+                                   const NDarray<double> &sigma1);
 
-    void compute_avg_on_rho_points(std::vector<double> &f,
-                                   const size_t offset,
+    void compute_avg_on_rho_points(NDarray<double> &f,
                                    const size_t nx, const size_t ny, const std::vector<double> &pycnoclines,
-                                   const std::vector<double> &iv,
-                                   const std::vector<double> &z,
-                                   const std::vector<std::vector<size_t>> &kvec,
-                                   const std::vector<std::vector<double>> &pycnocline_fields_z,
-                                   const std::vector<std::vector<double>> &sigma0,
-                                   const std::vector<std::vector<double>> &sigma1);
+                                   const NDarray<double> &v,
+                                   const NDarray<double> &z,
+                                   const std::vector<NDarray<size_t>> &kvec,
+                                   const NDarray<double> &pycnocline_fields_z,
+                                   const std::vector<NDarray<double>> &sigma0,
+                                   const std::vector<NDarray<double>> &sigma1);
 
-    void compute_avg_on_u_points(std::vector<double> &f,
-                                   const size_t offset,
+    void compute_avg_on_u_points(NDarray<double> &f,
                                    const size_t nx, const size_t ny, const std::vector<double> &pycnoclines,
-                                   const std::vector<double> &iv,
-                                   const std::vector<double> &z,
-                                   const std::vector<std::vector<size_t>> &kvec,
-                                   const std::vector<std::vector<double>> &pycnocline_fields_z,
-                                   const std::vector<std::vector<double>> &sigma0,
-                                   const std::vector<std::vector<double>> &sigma1);
+                                   const NDarray<double> &v,
+                                   const NDarray<double> &z,
+                                   const std::vector<NDarray<size_t>> &kvec,
+                                   const NDarray<double> &pycnocline_fields_z,
+                                   const std::vector<NDarray<double>> &sigma0,
+                                   const std::vector<NDarray<double>> &sigma1);
 
-    void compute_avg_on_v_points(std::vector<double> &f,
-                                   const size_t offset,
+    void compute_avg_on_v_points(NDarray<double> &f,
                                    const size_t nx, const size_t ny, const std::vector<double> &pycnoclines,
-                                   const std::vector<double> &iv,
-                                   const std::vector<double> &z,
-                                   const std::vector<std::vector<size_t>> &kvec,
-                                   const std::vector<std::vector<double>> &pycnocline_fields_z,
-                                   const std::vector<std::vector<double>> &sigma0,
-                                   const std::vector<std::vector<double>> &sigma1);
-
-
-
+                                   const NDarray<double> &v,
+                                   const NDarray<double> &z,
+                                   const std::vector<NDarray<size_t>> &kvec,
+                                   const NDarray<double> &pycnocline_fields_z,
+                                   const std::vector<NDarray<double>> &sigma0,
+                                   const std::vector<NDarray<double>> &sigma1);
 
     void resolve_pycnocline_indices(const double rho, const size_t ny, const size_t nx,
                                     DataNC &data,
-                                    std::vector<double> &sigma0,
-                                    std::vector<double> &sigma1,
-                                    std::vector<size_t> &kvec);
-
-    // get the index for 2 and 3 D ravelled arrays.
-    size_t index2(const size_t j, const size_t i);
-    size_t index2(const size_t j, const size_t i, const size_t dx);
-    size_t index3(const size_t k, const size_t j, const size_t i);
-    size_t index3(const size_t k, const size_t j, const size_t i, const size_t dy, const size_t dx);
+                                    NDarray<double> &sigma0,
+                                    NDarray<double> &sigma1,
+                                    NDarray<size_t> &kvec);
 
 public:
 
@@ -99,10 +88,11 @@ public:
     ~Interpolation()
     {
     };
-    void interpolate_onto_surface(std::map<std::string, std::vector<double>> & interpolation_variables, DataNC & data, const size_t i, const double rho);
+
+    void interpolate_onto_surface(std::map<std::string, NDarray<double>> & interpolation_variables, DataNC & data, const size_t i, const double rho);
 
     /* computes average values between two isopycnals with density rho0 and rho1 */
-    void compute_avg_between_isopycnals(std::map<std::string, std::vector<double>> & interpolation_variables,
+    void compute_avg_between_isopycnals(std::map<std::string, NDarray<double>> & interpolation_variables,
                                         DataNC & data,
                                         const std::vector<double> pycnoclines);
 
