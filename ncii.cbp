@@ -11,10 +11,11 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="-v O2,temp,salt,v,u -a -p 1026.5,1027.1 data/test.nc data/pycnocline.nc" />
+				<Option parameters="-v O2,temp,salt,v,u  -a -p 1026.3,1026.5,1027.1 data/test.nc data/pycnocline.nc" />
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-g" />
+					<Add option="-Wno-unused" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -31,7 +32,6 @@
 			</Target>
 		</Build>
 		<Compiler>
-			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 			<Add option="-Iinclude" />
 		</Compiler>
@@ -43,6 +43,7 @@
 		<Unit filename="include/cxxopts.hpp" />
 		<Unit filename="include/interpolation.hpp" />
 		<Unit filename="include/nc_data.hpp" />
+		<Unit filename="include/ndarray.hpp" />
 		<Unit filename="include/rho.hpp" />
 		<Unit filename="src/interpolation.cpp" />
 		<Unit filename="src/main.cpp" />
