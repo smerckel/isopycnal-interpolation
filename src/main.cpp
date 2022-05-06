@@ -7,7 +7,7 @@
 #include "cxxopts.hpp"
 #include "ndarray.hpp"
 
-const std::string VERSION{"0.2"};
+const std::string VERSION{"0.3"};
 
 int main(int argc, char** argv)
 {
