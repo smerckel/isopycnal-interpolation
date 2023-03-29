@@ -1,10 +1,19 @@
 #include "nc_data.hpp"
-
+#include <exception>
 
 int DataNC::open(const std::string filename, const std::vector<std::string> v)
 {
-    datafile.open(filename, netCDF::NcFile::read);
-    std::cerr << "File " << filename << " opened successfully..." << std::endl;
+    try
+        {
+            datafile.open(filename, netCDF::NcFile::read);
+        }
+    catch(std::exception& e)
+        {
+            std::cerr << "Whilst trying to open file " << filename << " the following error occured:" << std::endl;
+            std::cerr << e.what() << std::endl;
+            exit(1);
+        }
+    std::cout << "File " << filename << " opened successfully." << std::endl;
     set_dimensions();
     interpolation_variables=v;
 return 0;
@@ -290,7 +299,17 @@ int DataNC::set_dimensions()
 
 void PycnoNC::open(std::string filename)
 {
-    datafile.open(filename, netCDF::NcFile::replace); // overwrites existing one.
+    try
+        {
+            datafile.open(filename, netCDF::NcFile::replace); // overwrites existing one.
+        }
+    catch(std::exception& e)
+        {
+            std::cerr << "Whilst trying to open file " << filename << " the following error occured:" << std::endl;
+            std::cerr << e.what() << std::endl;
+            exit(1);
+        }
+      std::cout << "File " << filename << " opened successfully." << std::endl;
 }
 
 int PycnoNC::create_dimensions(const std::vector<double> & pycnoclines,

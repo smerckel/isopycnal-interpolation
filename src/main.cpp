@@ -21,14 +21,14 @@ int main(int argc, char** argv)
 
     /* parse command line options */
     cxxopts::Options options("ncii",
-    "\nROMS model netCDF isopycnal interpolation (ncii)\n\nNCII is a C++ program that interpolates 3D variables onto one or more pycnocline\nlevels. The program reads from a netCDF file and writes the results into a new netCDF\nfile.\n");
+    "\nROMS model netCDF isopycnal interpolation (ncii)\n\nNCII is a C++ program that interpolates 3D variables onto one or more isopycnal\nlevels. The program reads from a netCDF file and writes the results into a new netCDF\nfile.\n");
 
     options.add_options()
     ("input", "Input netCDF file", cxxopts::value<std::string>())
     ("output", "Output netCDF file", cxxopts::value<std::string>())
     ("a,avg", "Average variables between isopycnal levels")
     ("v,variables", "(list of) variable(s) to interpolate", cxxopts::value<std::vector<std::string>>())
-    ("p,pycnocline_levels", "(list of) pycnocline density or densities", cxxopts::value<std::vector<double>>())
+    ("p,isopycnal_levels", "(list of) isopycnal density or densities", cxxopts::value<std::vector<double>>())
     ("h,help", "Print usage")
     ("version", "Print version number")
     ;
@@ -50,9 +50,9 @@ int main(int argc, char** argv)
         std::cout << "It is mandatory to supply a list of variables. (Use -v variable0,<varibale1>,...)" << std::endl;
         exit_value |= 1;
     }
-    if (result.count("pycnocline_levels")==0)
+    if (result.count("isopycnal_levels")==0)
     {
-        std::cout << "It is mandatory to supply a list of pycnocline levels. (Use -p 1026.3,...)" << std::endl;
+        std::cout << "It is mandatory to supply a list of isopycnal levels. (Use -p 1026.3,...)" << std::endl;
         exit_value |= 2;
     }
     if ( (result["input"].count()!=1) || (result["output"].count()!=1))
@@ -67,9 +67,9 @@ int main(int argc, char** argv)
         exit_value |= 8;
     }
 
-    if ( (result["avg"].count()==1) && ((exit_value &2) || (result["pycnocline_levels"].as<std::vector<double>>().size()<2)) )
+    if ( (result["avg"].count()==1) && ((exit_value &2) || (result["isopycnal_levels"].as<std::vector<double>>().size()<2)) )
     {
-        std::cout << "Cannot compute averages if less than two pycnocline values are given." << std::endl;
+        std::cout << "Cannot compute averages if less than two isopycnal values are given." << std::endl;
         exit_value |= 16;
     }
 
@@ -86,8 +86,8 @@ int main(int argc, char** argv)
     input_filename = result["input"].as<std::string>();
     output_filename = result["output"].as<std::string>();
 
-    //pycnoclines holds a vector with the density values of the isopycnals:
-    std::vector<double> pycnoclines = result["pycnocline_levels"].as<std::vector<double>>();
+    //isopycnals holds a vector with the density values of the isopycnals:
+    std::vector<double> isopycnals = result["isopycnal_levels"].as<std::vector<double>>();
 
     // interpolation_variables is a dictionary <variable name : 2D array>
     std::map<std::string, NDarray<double>> interpolation_variables{};
@@ -103,8 +103,8 @@ int main(int argc, char** argv)
     std::cout << "Going to process the following variables:" << std::endl;
     for (auto it = interpolation_variables.begin(); it!=interpolation_variables.end(); ++it)
         std::cout << "\t" << it->first << std::endl;
-    std::cout << "and interpolate them on the the following pycnoclines:" << std::endl;
-    for (auto it = pycnoclines.begin(); it!=pycnoclines.end(); ++it)
+    std::cout << "and interpolate them on the the following isopycnals:" << std::endl;
+    for (auto it = isopycnals.begin(); it!=isopycnals.end(); ++it)
         std::cout << "\t" << *it << std::endl;
 
     // The work starts here.
@@ -126,10 +126,10 @@ int main(int argc, char** argv)
         data.set_variable_coordinates(it->first);
     }
     std::cerr << "Create dimensions for output file..." << std::endl;
-    data_out.create_dimensions(pycnoclines, data.get("eta_rho"), data.get("xi_rho"),
+    data_out.create_dimensions(isopycnals, data.get("eta_rho"), data.get("xi_rho"),
                                data.get("eta_v"), data.get("xi_u"), result["avg"].count()==1);
 
-    std::cerr << "Create pycnocline-interpolated variables for output file..." << std::endl;
+    std::cerr << "Create isopycnal-interpolated variables for output file..." << std::endl;
     for(auto it = interpolation_variables.begin(); it != interpolation_variables.end(); ++ it)
         data_out.create_surface_variable(it->first, data.get_unit(it->first),
                                          data.get_variable_coordinates(it->first));
@@ -138,7 +138,7 @@ int main(int argc, char** argv)
     {
         size_t ny = data.get_ny() - (size_t) (data.get_variable_coordinates(it->first) == data.v_coordinates);
         size_t nx = data.get_nx() - (size_t) (data.get_variable_coordinates(it->first) == data.u_coordinates);
-        size_t nlayers = pycnoclines.size() - (size_t) (result["avg"].count() == 1);
+        size_t nlayers = isopycnals.size() - (size_t) (result["avg"].count() == 1);
         it->second.resize(nlayers, ny, nx);
     }
 
@@ -151,13 +151,13 @@ int main(int argc, char** argv)
         if (result["avg"].count() == 0)
         {
             std::cerr << "Interpolate fields..." << std::endl;
-            for (size_t i=0; i<pycnoclines.size(); ++i)
-                interp.interpolate_onto_surface(interpolation_variables, data, i, pycnoclines[i]);
+            for (size_t i=0; i<isopycnals.size(); ++i)
+                interp.interpolate_onto_surface(interpolation_variables, data, i, isopycnals[i]);
         }
         else
         {
             std::cerr << "Computing averages..." << std::endl;
-            interp.compute_avg_between_isopycnals(interpolation_variables, data, pycnoclines);
+            interp.compute_avg_between_isopycnals(interpolation_variables, data, isopycnals);
         }
         std::cerr << "Write fields..." << std::endl;
         //write the fields
